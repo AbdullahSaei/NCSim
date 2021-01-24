@@ -6,13 +6,15 @@
     "screen_refresh_time": 0.1,
     "screen_height": 600,
     "screen_width": 600,
+    "screen_margin": 30,
     "screen_bgcolor": "black"
   },
   "Parameters": {
     "rounds_num": 5,
     "round_time_ms": 1000,
-    "nodes_num": 5,
-    "nodes_range": 50,
-    "nodes_tx_time_ms": 40
+    "nodes_num": 10,
+    "nodes_range": 150,
+    "nodes_tx_time_ms": 40,
+    "packet_loss_prob": 0
   }
 }

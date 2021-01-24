@@ -5,8 +5,11 @@ from node import Node
 sim = NCSim()
 
 def main():
+    sim.network_discover()
     sim.run()
-    input("Done!")
+    print("Done!")
+    
+    sim.mainloop()
 
 
 if __name__ == '__main__':
