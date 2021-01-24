@@ -1,0 +1,18 @@
+{
+  "Simulation": {
+    "id": "1",
+    "name": "Simple_WSN",
+    "screen_title": "Network Coding Simulator",
+    "screen_refresh_time": 0.1,
+    "screen_height": 600,
+    "screen_width": 600,
+    "screen_bgcolor": "black"
+  },
+  "Parameters": {
+    "rounds_num": 5,
+    "round_time_ms": 1000,
+    "nodes_num": 5,
+    "nodes_range": 50,
+    "nodes_tx_time_ms": 40
+  }
+}
