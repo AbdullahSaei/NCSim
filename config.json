@@ -6,7 +6,7 @@
     "screen_refresh_time": 0.1,
     "screen_height": 600,
     "screen_width": 600,
-    "screen_margin": 30,
+    "screen_margin": 100,
     "screen_bgcolor": "black"
   },
   "Parameters": {

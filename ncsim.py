@@ -52,10 +52,9 @@ class NCSim():
         for n in self.nodes:
             n.show_coverage()
             self.screen.update()
-            time.sleep(0.5)
+            time.sleep(1)
             n.hide_coverage()
-
-
+            
     def run(self):
         rounds = int(CFG_PARAM.get("rounds_num",'5'))
         round_time_ms = int(CFG_PARAM.get("round_time_ms",'1000'))
