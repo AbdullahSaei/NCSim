@@ -14,7 +14,7 @@ class Node(Turtle):
         self.packets = []
 
     def setup_helper(self):
-        #self.helper.hideturtle()
+        self.helper.hideturtle()
         self.helper.pu()
         self.helper.goto(self.pos())
         self.helper.color(self.node_rgb)
@@ -40,6 +40,9 @@ class Node(Turtle):
         self.helper.pendown()
         self.helper.clear()
         self.helper.penup()
+
+    def discover_neighbours(self):
+        pass
 
 
 
