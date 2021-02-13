@@ -4,6 +4,7 @@ import json
 import time
 import random
 
+
 try:
     ## Open the NCSim Config Json file
     with open('config.json') as json_file:
@@ -49,7 +50,6 @@ class NCSim:
         self.draw_network(TOPOLOGY_TYPE)                            # Adjust Nodes Co-ordinates according to topology
         self.screen.update()                                        # Update Screen Changes
 
-
     def draw_network(self, topology):
         draw_cursor = Turtle()                  # Create A Drawing Cursor
         draw_cursor.color("white")
@@ -74,9 +74,6 @@ class NCSim:
                 node_position = draw_cursor.position()              # fetch Cursor Position
                 self.nodes[index].place_node(node_position)         # Locate Node where Cursor Stops
                 draw_cursor.fd(chain_length/NUM_OF_NODES)           # Move Cursor forward by node spacing value
-        ## IF HYBRID TOPOLOGY
-        elif topology == "hybrid":
-            pass
         ## IF RANDOM TOPOLOGY
         elif topology == "random":
             ## Constants
@@ -102,11 +99,11 @@ class NCSim:
                 # print((index % 4))
                 # print(x_position, y_position)
                 self.nodes[index].place_node((x_position, y_position))      # Locate Node where Cursor Stops
-
+        ## IF HYBRID TOPOLOGY
+        elif topology == "hybrid":
+            pass
         else:
             print("Error! Invalid Topology input.")
-
-
 
     def network_discover(self):
         for n in self.nodes:
