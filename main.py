@@ -5,6 +5,7 @@ from node import Node
 
 sim = NCSim()
 
+
 def main():
     sim.network_discover()
     sim.run()

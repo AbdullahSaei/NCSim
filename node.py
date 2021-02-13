@@ -1,12 +1,13 @@
 from turtle import Turtle
 import random
 
+
 class Node(Turtle):
 
-    def __init__(self, node_range, place=(0,0)):
+    def __init__(self, n_coverage, place=(0, 0)):
         super().__init__()
-        self.coverage = node_range
-        self.node_rgb = (random.random(),random.random(),random.random())
+        self.coverage = n_coverage
+        self.node_rgb = (random.random(), random.random(), random.random())
         self.home = place
         self.place_node(place)
         self.helper = Turtle()
@@ -31,7 +32,7 @@ class Node(Turtle):
         pass
 
     def show_coverage(self):
-        self.helper.goto(self.xcor(),self.ycor()-self.coverage)
+        self.helper.goto(self.xcor(), self.ycor() - self.coverage)
         self.helper.pendown()
         self.helper.circle(self.coverage)
         self.helper.penup()
@@ -53,12 +54,3 @@ class Node(Turtle):
         # check if data in buffer
         # decode or recode
         pass
-        
-
-
-
-
-
-
-
-

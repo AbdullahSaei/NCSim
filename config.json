@@ -10,10 +10,10 @@
     "screen_bgcolor": "black"
   },
   "Parameters": {
-    "nodes_num": 10,
+    "nodes_num": 13,
     "rounds_num": 5,
     "round_time_ms": 1000,
-    "topology": "random",
+    "topology": "ring",
     "nodes_coverage": 150,
     "nodes_tx_time_ms": 40,
     "packet_loss_prob": 0
