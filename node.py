@@ -12,6 +12,7 @@ class Node(Turtle):
         self.helper = Turtle()
         self.setup_helper()
         self.packets = []
+        self.rx_buffer = []
 
     def setup_helper(self):
         self.helper.hideturtle()
@@ -41,8 +42,18 @@ class Node(Turtle):
         self.helper.clear()
         self.helper.penup()
 
-    def discover_neighbours(self):
+    def discover_neighbors(self):
         pass
+
+    def access_rx_buffer(self, new_msg):
+        if len(self.rx_buffer) > MAX:
+            self.rx_buffer.append(new_msg)
+
+    def handle_receive(self):
+        # check if data in buffer
+        # decode or recode
+        pass
+        
 
 
 
