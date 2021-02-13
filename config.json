@@ -6,14 +6,14 @@
     "screen_refresh_time": 0.1,
     "screen_height": 600,
     "screen_width": 600,
-    "screen_margin": 100,
+    "screen_margin": 50,
     "screen_bgcolor": "black"
   },
   "Parameters": {
     "nodes_num": 13,
     "rounds_num": 5,
     "round_time_ms": 1000,
-    "topology": "ring",
+    "topology": "chain",
     "nodes_coverage": 150,
     "nodes_tx_time_ms": 40,
     "packet_loss_prob": 0

@@ -53,8 +53,11 @@ class NCSim:
     def draw_network(self, topology):
         draw_cursor = Turtle()                  # Create A Drawing Cursor
         draw_cursor.color("white")
-        # draw_cursor.ht()                        # Hide the Cursor
-        # draw_cursor.penup()                     # Hide Cursor pen movements
+        draw_cursor.ht()                        # Hide the Cursor
+        draw_cursor.penup()                     # Hide Cursor pen movements
+        draw_cursor.setposition(0, (SCREEN_HEIGHT/2)-SCREEN_MARGIN)
+        draw_cursor.write(f"{topology.title()} Topology", align="Center", font=("Arial", 18, "normal"))
+
         ## IF RING TOPOLOGY
         if topology == "ring":
             ring_radius = SCREEN_HEIGHT/3                           # Set the Ring Radius
