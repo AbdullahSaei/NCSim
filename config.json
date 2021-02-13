@@ -13,7 +13,8 @@
     "nodes_num": 10,
     "rounds_num": 5,
     "round_time_ms": 1000,
-    "nodes_range": 150,
+    "topology": "random",
+    "nodes_coverage": 150,
     "nodes_tx_time_ms": 40,
     "packet_loss_prob": 0
   }

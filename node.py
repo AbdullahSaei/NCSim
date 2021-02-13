@@ -46,7 +46,7 @@ class Node(Turtle):
         pass
 
     def access_rx_buffer(self, new_msg):
-        if len(self.rx_buffer) > MAX:
+        if len(self.rx_buffer) > 50:
             self.rx_buffer.append(new_msg)
 
     def handle_receive(self):
