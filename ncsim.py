@@ -8,26 +8,29 @@ import random
 try:
     ## Open the NCSim Config Json file
     with open('config.json') as json_file:
-        cfg = json.loads(json_file.read())                                  # Read Content
-        CFG_SIM = cfg.get('Simulation')                                     # Fetch Simulation Dictionary
-        CFG_PARAM = cfg.get('Parameters')                                   # Fetch Parameters Dictionary
+        cfg = json.loads(json_file.read())    # Read Content
 
-        ## Fetch Screen related Configurations, or set default values.
-        SCREEN_WIDTH = int(CFG_SIM.get('screen_width', 600))
-        SCREEN_HEIGHT = int(CFG_SIM.get('screen_height', 600))
-        SCREEN_MARGIN = int(CFG_SIM.get('screen_margin', 30))
-        SCREEN_BGCOLOR = CFG_SIM.get('screen_bgcolor', 'black')
-        SCREEN_REFRESH_TIME = int(CFG_SIM.get("screen_refresh_time", '0.1'))
-        SCREEN_TITLE = CFG_SIM.get('screen_title', 'Network Coding Simulator')
-
-        ## Fetch Nodes related Configurations, or set default values.
-        NUM_OF_NODES = int(CFG_PARAM.get("nodes_num", '10'))
-        NODE_COVERAGE = int(CFG_PARAM.get("nodes_coverage", '20'))
-        TOPOLOGY_TYPE = CFG_PARAM.get('topology', 'random')
-
-except ValueError as e:
+except Exception as e:
+    cfg = {"unk":"unk"}
     print('failure to read config.json, running default values')
     print(e)
+
+CFG_SIM = cfg.get('Simulation',{"unk":"unk"})   # Fetch Simulation Dictionary
+CFG_PARAM = cfg.get('Parameters',{"unk":"unk"}) # Fetch Parameters Dictionary
+
+## Fetch Screen related Configurations, or set default values.
+SCREEN_WIDTH = int(CFG_SIM.get('screen_width', 600))
+SCREEN_HEIGHT = int(CFG_SIM.get('screen_height', 600))
+SCREEN_MARGIN = int(CFG_SIM.get('screen_margin', 30))
+SCREEN_BGCOLOR = CFG_SIM.get('screen_bgcolor', 'black')
+SCREEN_REFRESH_TIME = int(CFG_SIM.get("screen_refresh_time", 0.1))
+SCREEN_TITLE = CFG_SIM.get('screen_title', 'Network Coding Simulator')
+
+## Fetch Nodes related Configurations, or set default values.
+NUM_OF_NODES = int(CFG_PARAM.get("nodes_num", '10'))
+NODE_COVERAGE = int(CFG_PARAM.get("nodes_coverage", '100'))
+TOPOLOGY_TYPE = CFG_PARAM.get('topology', 'random')
+
 
 
 class NCSim:
@@ -70,13 +73,17 @@ class NCSim:
                 self.nodes[index].place_node(node_position)         # Locate Node where Cursor Stops
         ## IF CHAIN TOPOLOGY
         elif topology == "chain":
-            chain_length = SCREEN_WIDTH*0.75                        # Set the Chain Length
-            draw_cursor.setposition(-(chain_length/2), 0)           # Adjust Cursor starting position
+            # Set the Chain Length
+            chain_length = SCREEN_WIDTH
+            # Adjust Cursor starting position
+            draw_cursor.setposition(-(chain_length/2)+SCREEN_MARGIN, -(chain_length/2)+SCREEN_MARGIN)
+            # To draw diagonally
+            draw_cursor.left(45)
             ## Loop over the Nodes and Set Positions
-            for index in range(NUM_OF_NODES):
-                node_position = draw_cursor.position()              # fetch Cursor Position
-                self.nodes[index].place_node(node_position)         # Locate Node where Cursor Stops
-                draw_cursor.fd(chain_length/NUM_OF_NODES)           # Move Cursor forward by node spacing value
+            for node in self.nodes:
+                draw_cursor.fd(chain_length/NUM_OF_NODES)  # Move Cursor forward by node spacing value
+                node_position = draw_cursor.position()     # fetch Cursor Position
+                node.place_node(node_position)             # Locate Node where Cursor Stops
         ## IF RANDOM TOPOLOGY
         elif topology == "random":
             ## Constants
@@ -103,29 +110,42 @@ class NCSim:
                 # print(x_position, y_position)
                 self.nodes[index].place_node((x_position, y_position))      # Locate Node where Cursor Stops
         ## IF HYBRID TOPOLOGY
+        elif topology == "sandglass":
+            pass        
+        ## IF HYBRID TOPOLOGY
         elif topology == "hybrid":
             pass
         else:
-            print("Error! Invalid Topology input.")
+            raise Warning("Invalid Topology input.")
 
-    def network_discover(self):
-        for n in self.nodes:
-            n.show_coverage()
+    def discover_network(self):
+        # Loop over all nodes
+        for node in self.nodes:
+            node.show_coverage()
             self.screen.update()
-            time.sleep(1)
-            n.hide_coverage()
+            #Scan all nodes within the coverage area
+            for neighbor in self.nodes:
+                if node.distance(neighbor) < node.coverage:
+                    node.add_neighbor(neighbor)
+            time.sleep(0.05)
+            node.hide_coverage()
 
     def run(self):
-        rounds = int(CFG_PARAM.get("rounds_num", '5'))
-        round_time_ms = int(CFG_PARAM.get("round_time_ms", '1000'))
-        nodes_tx_time_ms = int(CFG_PARAM.get("nodes_tx_time_ms", '40'))
-        tx_times = int(round_time_ms/nodes_tx_time_ms)
-        for _ in range(rounds):
-            for _ in range(tx_times):
+        generations = int(CFG_PARAM.get("generations_num", '5'))
+        T_g = int(CFG_PARAM.get("generation_time_ms", '1000'))
+        T_a = int(CFG_PARAM.get("action_time_ms", '40'))
+        rounds = int(T_g/T_a)
+        for g in range(generations):
+            for r in range(rounds): 
                 for i, node in enumerate(self.nodes, start=1):
                     self.screen.update()
                     time.sleep(SCREEN_REFRESH_TIME)
-                    print("node {} broadcast in range {}".format(i, node.coverage))
+                    if g == 0 and r == 0:
+                        if len(node.neighbors) == 0:
+                            Warning("node {} has no neighbors".format(i))
+                        print("node {} has {} neighbors".format(i, len(node.neighbors)))
+                        
+        print("run completed")
 
     def mainloop(self):
         self.screen.exitonclick()

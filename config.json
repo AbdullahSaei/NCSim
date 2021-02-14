@@ -10,12 +10,12 @@
     "screen_bgcolor": "black"
   },
   "Parameters": {
-    "nodes_num": 13,
-    "rounds_num": 5,
-    "round_time_ms": 1000,
+    "nodes_num": 15,
+    "generations_num": 5,
+    "generation_time_ms": 1000,
+    "action_time_ms": 40,
     "topology": "chain",
-    "nodes_coverage": 150,
-    "nodes_tx_time_ms": 40,
+    "nodes_coverage": 100,
     "packet_loss_prob": 0
   }
 }

@@ -12,7 +12,8 @@ class Node(Turtle):
         self.place_node(place)
         self.helper = Turtle()
         self.setup_helper()
-        self.packets = []
+        self.set_buffer_size(1)
+        self.neighbors = []
         self.rx_buffer = []
 
     def setup_helper(self):
@@ -43,14 +44,23 @@ class Node(Turtle):
         self.helper.clear()
         self.helper.penup()
 
-    def discover_neighbors(self):
-        pass
+    def add_neighbor(self, new_neighbor):
+        # To exclude duplications and adding self node to neighbors
+        if new_neighbor not in self.neighbors and new_neighbor != self:
+            self.neighbors.append(new_neighbor)
+
+    def set_buffer_size(self, val):
+        self.buffer_size = val
 
     def access_rx_buffer(self, new_msg):
-        if len(self.rx_buffer) > 50:
+        if len(self.rx_buffer) > self.buffer_size:
             self.rx_buffer.append(new_msg)
 
     def handle_receive(self):
         # check if data in buffer
-        # decode or recode
-        pass
+        if len(self.rx_buffer) > 0:
+            # decode or recode
+            for data in self.rx_buffer:
+                print("decode or recode {}".format(data))
+            # Clear buffer
+            self.rx_buffer = []
