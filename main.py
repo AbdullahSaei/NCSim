@@ -29,7 +29,7 @@ sim = NCSim()
 
 def main():
     sim.discover_network()
-    sim.run()
+    sim.run_generations()
     print("Done!")
     
     sim.mainloop()

@@ -4,7 +4,7 @@ import random
 
 class Node(Turtle):
 
-    def __init__(self, n_coverage, place=(0, 0)):
+    def __init__(self, n_coverage, buf_size=1, place=(0, 0)):
         super().__init__()
         self.coverage = n_coverage
         self.node_rgb = (random.random(), random.random(), random.random())
@@ -12,7 +12,7 @@ class Node(Turtle):
         self.place_node(place)
         self.helper = Turtle()
         self.setup_helper()
-        self.set_buffer_size(1)
+        self.buffer_size = buf_size
         self.neighbors = []
         self.rx_buffer = []
 
@@ -29,9 +29,6 @@ class Node(Turtle):
         self.speed("fastest")
         self.goto(position)
 
-    def broadcast(self):
-        pass
-
     def show_coverage(self):
         self.helper.goto(self.xcor(), self.ycor() - self.coverage)
         self.helper.pendown()
@@ -46,17 +43,17 @@ class Node(Turtle):
 
     def add_neighbor(self, new_neighbor):
         # To exclude duplications and adding self node to neighbors
-        if new_neighbor not in self.neighbors and new_neighbor != self:
+        if (new_neighbor not in self.neighbors) and (new_neighbor != self):
             self.neighbors.append(new_neighbor)
 
-    def set_buffer_size(self, val):
-        self.buffer_size = val
+    def access_rx_buffer(self, rx_node, new_packet):
+        # Set Packet-loss Coefficient Randomly, from 0 up to configured value
 
-    def access_rx_buffer(self, new_msg):
         if len(self.rx_buffer) > self.buffer_size:
-            self.rx_buffer.append(new_msg)
+            # Set the rx_Node Buffer with the sent packet
+            self.rx_buffer.append(new_packet)
 
-    def handle_receive(self):
+    def rx_packet(self):
         # check if data in buffer
         if len(self.rx_buffer) > 0:
             # decode or recode
@@ -64,3 +61,14 @@ class Node(Turtle):
                 print("decode or recode {}".format(data))
             # Clear buffer
             self.rx_buffer = []
+
+    def tx_packet(self, rx_node, tx_message):
+        # Decode Message
+        tx_packet = tx_message
+        # Send Packet, to current rx_node
+        access_rx_buffer(rx_node, tx_packet)
+
+    def broadcast_message(self, tx_message):
+        for node in self.neighbors:
+            self.tx_packet(node, tx_message)
+

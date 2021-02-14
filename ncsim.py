@@ -29,8 +29,8 @@ SCREEN_TITLE = CFG_SIM.get('screen_title', 'Network Coding Simulator')
 ## Fetch Nodes related Configurations, or set default values.
 NUM_OF_NODES = int(CFG_PARAM.get("nodes_num", '10'))
 NODE_COVERAGE = int(CFG_PARAM.get("nodes_coverage", '100'))
+NODE_BUFFER_SIZE = int(CFG_PARAM.get('topology', 1))
 TOPOLOGY_TYPE = CFG_PARAM.get('topology', 'random')
-
 
 
 class NCSim:
@@ -49,7 +49,8 @@ class NCSim:
     def create_nodes(self):
         ## Loop over #no. of nodes to create it's objects
         for _ in range(NUM_OF_NODES):
-            self.nodes.append(Node(NODE_COVERAGE))                  # Append the created node to list of nodes
+            # Append the created node to list of nodes
+            self.nodes.append(Node(n_coverage=NODE_COVERAGE, buf_size=NODE_BUFFER_SIZE))
         self.draw_network(TOPOLOGY_TYPE)                            # Adjust Nodes Co-ordinates according to topology
         self.screen.update()                                        # Update Screen Changes
 
@@ -112,8 +113,8 @@ class NCSim:
         ## IF HYBRID TOPOLOGY
         elif topology == "sandglass":
             pass        
-        ## IF HYBRID TOPOLOGY
-        elif topology == "hybrid":
+        ## IF BUTTERFLY TOPOLOGY
+        elif topology == "butterfly":
             pass
         else:
             raise Warning("Invalid Topology input.")
@@ -130,7 +131,7 @@ class NCSim:
             time.sleep(0.05)
             node.hide_coverage()
 
-    def run(self):
+    def run_generations(self):
         generations = int(CFG_PARAM.get("generations_num", '5'))
         T_g = int(CFG_PARAM.get("generation_time_ms", '1000'))
         T_a = int(CFG_PARAM.get("action_time_ms", '40'))
