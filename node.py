@@ -46,7 +46,7 @@ class Node(Turtle):
         if (new_neighbor not in self.neighbors) and (new_neighbor != self):
             self.neighbors.append(new_neighbor)
 
-    def access_rx_buffer(self, rx_node, new_packet):
+    def access_rx_buffer(self, new_packet):
         # Set Packet-loss Coefficient Randomly, from 0 up to configured value
 
         if len(self.rx_buffer) > self.buffer_size:
@@ -66,7 +66,7 @@ class Node(Turtle):
         # Decode Message
         tx_packet = tx_message
         # Send Packet, to current rx_node
-        access_rx_buffer(rx_node, tx_packet)
+        rx_node.access_rx_buffer(tx_packet)
 
     def broadcast_message(self, tx_message):
         for node in self.neighbors:

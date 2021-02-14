@@ -29,7 +29,7 @@ SCREEN_TITLE = CFG_SIM.get('screen_title', 'Network Coding Simulator')
 ## Fetch Nodes related Configurations, or set default values.
 NUM_OF_NODES = int(CFG_PARAM.get("nodes_num", '10'))
 NODE_COVERAGE = int(CFG_PARAM.get("nodes_coverage", '100'))
-NODE_BUFFER_SIZE = int(CFG_PARAM.get('topology', 1))
+NODE_BUFFER_SIZE = int(CFG_PARAM.get('node_buffer_size', 1))
 TOPOLOGY_TYPE = CFG_PARAM.get('topology', 'random')
 
 
@@ -111,7 +111,7 @@ class NCSim:
                 # print(x_position, y_position)
                 self.nodes[index].place_node((x_position, y_position))      # Locate Node where Cursor Stops
         ## IF HYBRID TOPOLOGY
-        elif topology == "sandglass":
+        elif topology == "hybrid":
             pass        
         ## IF BUTTERFLY TOPOLOGY
         elif topology == "butterfly":
@@ -143,7 +143,7 @@ class NCSim:
                     time.sleep(SCREEN_REFRESH_TIME)
                     if g == 0 and r == 0:
                         if len(node.neighbors) == 0:
-                            Warning("node {} has no neighbors".format(i))
+                            print("Warning! node {} has no neighbors".format(i))
                         print("node {} has {} neighbors".format(i, len(node.neighbors)))
                         
         print("run completed")
