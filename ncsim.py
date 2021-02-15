@@ -1,9 +1,9 @@
 from turtle import Screen, Turtle
 from node import Node
+from platform import system as os_type
 import json
 import time
 import random
-
 
 try:
     ## Open the NCSim Config Json file
@@ -15,6 +15,7 @@ except Exception as e:
     print('failure to read config.json, running default values')
     print(e)
 
+CFG_OS = os_type()
 CFG_SIM = cfg.get('Simulation',{"unk":"unk"})   # Fetch Simulation Dictionary
 CFG_PARAM = cfg.get('Parameters',{"unk":"unk"}) # Fetch Parameters Dictionary
 
@@ -45,6 +46,14 @@ class NCSim:
         self.screen.bgcolor(SCREEN_BGCOLOR)                             # Setup Screen Coloring
         self.screen.title(SCREEN_TITLE)                                 # Setup Screen Title
         self.screen.tracer(0)                                           # Stop Auto-update Screen changes
+        # Add app icon
+        LOGO_PATH="assets/favicon.ico"
+        LOGO_LINUX_PATH="@assets/favicon_linux.xbm"  #do not forget "@" symbol and .xbm format for Ubuntu 
+        root = self.screen._root
+        if CFG_OS.lower() == "linux":
+            root.iconbitmap(LOGO_LINUX_PATH)
+        else:
+            root.iconbitmap(LOGO_PATH)
 
     def create_nodes(self):
         ## Loop over #no. of nodes to create it's objects
