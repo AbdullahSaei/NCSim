@@ -69,7 +69,7 @@ class NCSim:
         draw_cursor.ht()                        # Hide the Cursor
         draw_cursor.penup()                     # Hide Cursor pen movements
         draw_cursor.setposition(0, (SCREEN_HEIGHT/2)-SCREEN_MARGIN)
-        draw_cursor.write(f"{topology.title()} Topology", align="Center", font=("Arial", 18, "normal"))
+        draw_cursor.write(f"{topology.title()} topology - {NUM_OF_NODES} nodes", align="Center", font=("Arial", 14, "normal"))
 
         ## IF RING TOPOLOGY
         if topology == "ring":
