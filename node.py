@@ -71,4 +71,3 @@ class Node(Turtle):
     def broadcast_message(self, tx_message):
         for node in self.neighbors:
             self.tx_packet(node, tx_message)
-
