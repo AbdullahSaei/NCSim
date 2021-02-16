@@ -31,10 +31,9 @@ def main():
     sim.discover_network()
     sim.run_generations()
     print("Done!")
-    
+
     sim.mainloop()
 
 
 if __name__ == '__main__':
     main()
-
