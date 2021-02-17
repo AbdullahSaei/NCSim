@@ -124,9 +124,9 @@ class NCSim:
             quarter_size = int(NODE_COVERAGE*FACTOR)
             # Set the Quarter Areas in list Variable, X and Y Lower and Higher values
             quarters_areas = [{"X_RANGE": [-quarter_size, 0],
-                               "Y_RANGE": [0, quarter_size]},       # Q1
+                               "Y_RANGE": [0, quarter_size]},      # Q1
                               {"X_RANGE": [0, quarter_size],
-                               "Y_RANGE": [0, quarter_size]},       # Q2
+                               "Y_RANGE": [0, quarter_size]},      # Q2
                               {"X_RANGE": [-quarter_size, 0],
                                "Y_RANGE": [-quarter_size, 0]},     # Q3
                               {"X_RANGE": [0, quarter_size],
