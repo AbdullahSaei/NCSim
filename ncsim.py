@@ -3,7 +3,8 @@ from node import Node
 from platform import system as os_type
 import json
 import time
-import random
+import numpy as np
+import string
 
 try:
     # Open the NCSim Config Json file
@@ -30,6 +31,7 @@ SCREEN_TITLE = CFG_SIM.get('screen_title', 'Network Coding Simulator')
 
 # Fetch Nodes related Configurations, or set default values.
 NUM_OF_NODES = int(CFG_PARAM.get("nodes_num", '10'))
+SEED_VALUE = int(CFG_PARAM.get('seed', 0))
 NODE_COVERAGE = int(CFG_PARAM.get("nodes_coverage", '100'))
 NODE_BUFFER_SIZE = int(CFG_PARAM.get('node_buffer_size', 1))
 TOPOLOGY_TYPE = CFG_PARAM.get('topology', 'random')
@@ -63,9 +65,9 @@ class NCSim:
 
     def create_nodes(self):
         # Loop over #no. of nodes to create its objects
-        for _ in range(NUM_OF_NODES):
+        for index in range(NUM_OF_NODES):
             # Append the created node to list of nodes
-            self.nodes.append(Node(n_coverage=NODE_COVERAGE,
+            self.nodes.append(Node(index, n_coverage=NODE_COVERAGE,
                                    buf_size=NODE_BUFFER_SIZE))
         # Adjust Nodes Co-ordinates according to topology
         self.draw_network(TOPOLOGY_TYPE)
@@ -112,6 +114,8 @@ class NCSim:
                 node.place_node(node_position)
         # IF RANDOM TOPOLOGY
         elif topology == "random":
+            # Pesudo random seed
+            np.random.seed(SEED_VALUE)
             # Constants
             LOW_VALUE = 0
             HIGH_VALUE = 1
@@ -124,17 +128,17 @@ class NCSim:
                               {"X_RANGE": [0, quarter_size],
                                "Y_RANGE": [0, quarter_size]},       # Q2
                               {"X_RANGE": [-quarter_size, 0],
-                                "Y_RANGE": [-quarter_size, 0]},     # Q3
+                               "Y_RANGE": [-quarter_size, 0]},     # Q3
                               {"X_RANGE": [0, quarter_size],
-                                "Y_RANGE": [-quarter_size, 0]}]     # Q4
+                               "Y_RANGE": [-quarter_size, 0]}]     # Q4
             # Loop over the Nodes and Set Positions
             for index in range(NUM_OF_NODES):
                 # Randomly Set the Node X Position, in specific Quarter
-                x_position = random.randint(
+                x_position = np.random.randint(
                     quarters_areas[index % 4]["X_RANGE"][LOW_VALUE],
                     quarters_areas[index % 4]["X_RANGE"][HIGH_VALUE])
                 # Randomly Set the Node Y Position, in specific Quarter
-                y_position = random.randint(
+                y_position = np.random.randint(
                     quarters_areas[index % 4]["Y_RANGE"][LOW_VALUE],
                     quarters_areas[index % 4]["Y_RANGE"][HIGH_VALUE])
                 # print((index % 4))
@@ -152,7 +156,7 @@ class NCSim:
 
     def discover_network(self):
         # Loop over all nodes
-        for index, node in enumerate(self.nodes, start=1):
+        for index, node in enumerate(self.nodes):
             node.show_coverage()
             self.screen.update()
             # Scan all nodes within the coverage area
@@ -165,19 +169,35 @@ class NCSim:
                 print("Warning! node {} has no neighbors".format(index))
             node.hide_coverage()
 
+    # Simulation Sequence
     def run_generations(self):
         generations = int(CFG_PARAM.get("generations_num", '5'))
+        packet_size = int(CFG_PARAM.get("packet_size_bytes", 10))
+        packet_loss = int(CFG_PARAM.get("packet_loss_percent", 0))
         T_g = int(CFG_PARAM.get("generation_time_ms", '1000'))
         T_a = int(CFG_PARAM.get("action_time_ms", '40'))
         rounds = int(T_g/T_a)
+        #for random message generation
+        _alphabet = string.ascii_uppercase + string.digits
+        _alphabet_list = [char for char in _alphabet]
         for g in range(generations):
-            for r in range(rounds):
-                for i, node in enumerate(self.nodes, start=1):
+            print("\n Generation {} \n".format(g))
+            for _ in range(rounds):
+                print("Transmitting")
+                # All transmit in random order
+                for node in np.random.permutation(self.nodes):
                     self.screen.update()
                     time.sleep(SCREEN_REFRESH_TIME)
-                    if g == 0 and r == 0:
-                        print("node {} has {} neighbors".format(
-                            i, len(node.neighbors)))
+                    msg = "".join(np.random.choice(_alphabet_list, size=packet_size))
+                    node.broadcast_message(msg)
+
+                print("Receiving")
+                # All receive in random order
+                for node in np.random.permutation(self.nodes):
+                    self.screen.update()
+                    time.sleep(SCREEN_REFRESH_TIME)
+                    node.sense_spectrum(packet_loss)
+                    node.rx_packet()
 
         print("run completed")
 
