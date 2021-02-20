@@ -52,9 +52,9 @@ log_fh = logging.FileHandler(f'{LOG_PATH}/{EXP_NAME}_{EXP_ID}.log', 'w+')
 kpi_fh = logging.FileHandler(f'{LOG_PATH}/{EXP_NAME}_{EXP_ID}.csv', 'w+')
 
 # create a formatter and set the formatter for the handler.
-log_frmt = logging.Formatter('[%(levelname)s]:%(asctime)s\t%(funcName)s\t%(message)s',
-                             datefmt="%Y-%m-%d %H:%M:%S")
-kpi_frmt = logging.Formatter('%(levelname)s,%(asctime)s,%(funcName)s,%(message)s',
+log_frmt = logging.Formatter('%(asctime)s: %(levelname)-8s: %(funcName)-16s: %(message)s',
+                             datefmt="%Y-%m-%d %H.%M.%S")
+kpi_frmt = logging.Formatter('%(asctime)s,%(levelname)-8s,%(funcName)-17s,%(message)s',
                              datefmt="%Y-%m-%d %H:%M:%S")
 log_fh.setFormatter(log_frmt)
 kpi_fh.setFormatter(kpi_frmt)

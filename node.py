@@ -81,7 +81,7 @@ class Node(Turtle):
 
     def rx_packet(self, logger=None):
         # check if data in buffer
-        log_msg = "Node {},rx,".format(self.node_id)
+        log_msg = "Node {:2},rx,".format(self.node_id)
         if len(self.rx_buffer) > 0:
             log_msg += "msg "
             # decode or recode
@@ -96,12 +96,12 @@ class Node(Turtle):
 
     def tx_packet(self, rx_node, tx_message):
         # Decode Message
-        tx_packet = "IAM{}X".format(self.node_id) + tx_message
+        tx_packet = "IAM{:02}X".format(self.node_id) + tx_message
         # Send Packet, to current rx_node
         rx_node.access_rx_buffer(tx_packet)
 
     def broadcast_message(self, tx_message, logger=None):
-        logger.info("Node {},tx,msg {},broadcast_to {}".format(
+        logger.info("Node {:2},tx,msg {},broadcast_to {}".format(
             self.node_id, tx_message, len(self.neighbors)))
         for node in self.neighbors:
             self.tx_packet(node, tx_message)
