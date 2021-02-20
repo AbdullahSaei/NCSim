@@ -2,6 +2,7 @@
   "Simulation": {
     "id": "1",
     "name": "Simple_WSN",
+    "log_path": "logs/",
     "screen_title": "Network Coding Simulator",
     "screen_refresh_time": 0.1,
     "screen_height": 600,

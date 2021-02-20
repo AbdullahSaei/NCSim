@@ -5,6 +5,7 @@ import json
 import time
 import numpy as np
 import string
+import logging
 
 try:
     # Open the NCSim Config Json file
@@ -36,6 +37,34 @@ NODE_COVERAGE = int(CFG_PARAM.get("nodes_coverage", '100'))
 NODE_BUFFER_SIZE = int(CFG_PARAM.get('node_buffer_size', 1))
 TOPOLOGY_TYPE = CFG_PARAM.get('topology', 'random')
 
+# Fetch Logger related Configurations, or set default values.
+LOG_PATH = CFG_SIM.get('log_path', "")
+EXP_NAME = CFG_SIM.get('name', "test")
+EXP_ID = int(CFG_SIM.get('id', 0))
+
+# Create two Loggers .log for traces and .csv for KPIs
+# create loggers
+trace = logging.getLogger('trace')
+kpi = logging.getLogger('kpi')
+
+# add a file handler
+log_fh = logging.FileHandler(f'{LOG_PATH}/{EXP_NAME}_{EXP_ID}.log', 'w+')
+kpi_fh = logging.FileHandler(f'{LOG_PATH}/{EXP_NAME}_{EXP_ID}.csv', 'w+')
+
+# create a formatter and set the formatter for the handler.
+log_frmt = logging.Formatter('[%(levelname)s]:%(asctime)s\t%(funcName)s\t%(message)s',
+                             datefmt="%Y-%m-%d %H:%M:%S")
+kpi_frmt = logging.Formatter('%(levelname)s,%(asctime)s,%(funcName)s,%(message)s',
+                             datefmt="%Y-%m-%d %H:%M:%S")
+log_fh.setFormatter(log_frmt)
+kpi_fh.setFormatter(kpi_frmt)
+
+# add the Handler to the logger
+trace.addHandler(log_fh)
+trace.setLevel(logging.DEBUG)
+kpi.addHandler(kpi_fh)
+kpi.setLevel(logging.DEBUG)
+
 
 class NCSim:
     def __init__(self):
@@ -60,15 +89,19 @@ class NCSim:
         root = self.screen._root
         if CFG_OS.lower() == "linux":
             root.iconbitmap(LOGO_LINUX_PATH)
+            trace.info("running on linux")
         else:
             root.iconbitmap(LOGO_PATH)
+            trace.info("running on windows or macOS")
 
     def create_nodes(self):
+        trace.info(f"creating {NUM_OF_NODES} node(s)")
         # Loop over #no. of nodes to create its objects
         for index in range(NUM_OF_NODES):
             # Append the created node to list of nodes
             self.nodes.append(Node(index, n_coverage=NODE_COVERAGE,
                                    buf_size=NODE_BUFFER_SIZE))
+        trace.info(f"setting topology to {TOPOLOGY_TYPE}")
         # Adjust Nodes Co-ordinates according to topology
         self.draw_network(TOPOLOGY_TYPE)
         # Update Screen Changes
@@ -156,7 +189,8 @@ class NCSim:
 
     def discover_network(self):
         # Loop over all nodes
-        for index, node in enumerate(self.nodes):
+        for node in self.nodes:
+            trace.info(f"node {node.node_id} discovering its neighbors")
             node.show_coverage()
             self.screen.update()
             # Scan all nodes within the coverage area
@@ -166,7 +200,10 @@ class NCSim:
             time.sleep(0.05)
             # Check if there was no neighbors
             if len(node.neighbors) == 0:
-                print("Warning! node {} has no neighbors".format(index))
+                trace.warning(f"node {node.node_id} has no neighbors")
+            else:
+                trace.info(
+                    f"node {node.node_id} has {len(node.neighbors)} neighbors")
             node.hide_coverage()
 
     # Simulation Sequence
@@ -177,28 +214,31 @@ class NCSim:
         T_g = int(CFG_PARAM.get("generation_time_ms", '1000'))
         T_a = int(CFG_PARAM.get("action_time_ms", '40'))
         rounds = int(T_g/T_a)
-        #for random message generation
+        # for random message generation
         _alphabet = string.ascii_uppercase + string.digits
         _alphabet_list = [char for char in _alphabet]
         for g in range(generations):
+            trace.info(f"generation {g} begin")
             print("\n Generation {} \n".format(g))
             for _ in range(rounds):
-                print("Transmitting")
+                trace.info("Transmitting phase")
                 # All transmit in random order
                 for node in np.random.permutation(self.nodes):
                     self.screen.update()
                     time.sleep(SCREEN_REFRESH_TIME)
-                    msg = "".join(np.random.choice(_alphabet_list, size=packet_size))
-                    node.broadcast_message(msg)
+                    msg = "".join(np.random.choice(
+                        _alphabet_list, size=packet_size))
+                    node.broadcast_message(msg, logger=kpi)
 
-                print("Receiving")
+                trace.info("Receiving phase")
                 # All receive in random order
                 for node in np.random.permutation(self.nodes):
                     self.screen.update()
                     time.sleep(SCREEN_REFRESH_TIME)
-                    node.sense_spectrum(packet_loss)
-                    node.rx_packet()
+                    node.sense_spectrum(packet_loss, logger=kpi)
+                    node.rx_packet(kpi)
 
+        trace.info("run completed")
         print("run completed")
 
     def mainloop(self):

@@ -1,0 +1,139 @@
+[INFO]:2021-02-20 18:40:37	screen_init	running on linux
+[INFO]:2021-02-20 18:40:37	create_nodes	creating 15 node(s)
+[INFO]:2021-02-20 18:40:37	create_nodes	setting topology to chain
+[INFO]:2021-02-20 18:40:37	discover_network	node 0 discovering its neighbors
+[INFO]:2021-02-20 18:40:37	discover_network	node 0 has 2 neighbors
+[INFO]:2021-02-20 18:40:37	discover_network	node 1 discovering its neighbors
+[INFO]:2021-02-20 18:40:37	discover_network	node 1 has 3 neighbors
+[INFO]:2021-02-20 18:40:37	discover_network	node 2 discovering its neighbors
+[INFO]:2021-02-20 18:40:37	discover_network	node 2 has 4 neighbors
+[INFO]:2021-02-20 18:40:37	discover_network	node 3 discovering its neighbors
+[INFO]:2021-02-20 18:40:37	discover_network	node 3 has 4 neighbors
+[INFO]:2021-02-20 18:40:37	discover_network	node 4 discovering its neighbors
+[INFO]:2021-02-20 18:40:37	discover_network	node 4 has 4 neighbors
+[INFO]:2021-02-20 18:40:37	discover_network	node 5 discovering its neighbors
+[INFO]:2021-02-20 18:40:37	discover_network	node 5 has 4 neighbors
+[INFO]:2021-02-20 18:40:37	discover_network	node 6 discovering its neighbors
+[INFO]:2021-02-20 18:40:37	discover_network	node 6 has 4 neighbors
+[INFO]:2021-02-20 18:40:37	discover_network	node 7 discovering its neighbors
+[INFO]:2021-02-20 18:40:37	discover_network	node 7 has 4 neighbors
+[INFO]:2021-02-20 18:40:37	discover_network	node 8 discovering its neighbors
+[INFO]:2021-02-20 18:40:38	discover_network	node 8 has 4 neighbors
+[INFO]:2021-02-20 18:40:38	discover_network	node 9 discovering its neighbors
+[INFO]:2021-02-20 18:40:38	discover_network	node 9 has 4 neighbors
+[INFO]:2021-02-20 18:40:38	discover_network	node 10 discovering its neighbors
+[INFO]:2021-02-20 18:40:38	discover_network	node 10 has 4 neighbors
+[INFO]:2021-02-20 18:40:38	discover_network	node 11 discovering its neighbors
+[INFO]:2021-02-20 18:40:38	discover_network	node 11 has 4 neighbors
+[INFO]:2021-02-20 18:40:38	discover_network	node 12 discovering its neighbors
+[INFO]:2021-02-20 18:40:38	discover_network	node 12 has 4 neighbors
+[INFO]:2021-02-20 18:40:38	discover_network	node 13 discovering its neighbors
+[INFO]:2021-02-20 18:40:38	discover_network	node 13 has 3 neighbors
+[INFO]:2021-02-20 18:40:38	discover_network	node 14 discovering its neighbors
+[INFO]:2021-02-20 18:40:38	discover_network	node 14 has 2 neighbors
+[INFO]:2021-02-20 18:40:38	run_generations	generation 0 begin
+[INFO]:2021-02-20 18:40:38	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:38	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:38	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:38	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:38	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:38	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:38	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:38	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:38	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:38	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:38	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:38	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:38	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:38	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:39	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:39	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:39	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:39	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:39	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:39	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:39	run_generations	generation 1 begin
+[INFO]:2021-02-20 18:40:39	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:39	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:39	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:39	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:39	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:39	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:39	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:39	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:39	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:39	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:39	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:39	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:39	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:39	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:39	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:39	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:39	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:39	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:39	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:39	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:39	run_generations	generation 2 begin
+[INFO]:2021-02-20 18:40:39	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:39	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:39	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:39	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:39	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:39	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:39	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:39	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:39	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:39	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:40	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:40	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:40	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:40	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:40	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:40	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:40	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:40	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:40	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:40	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:40	run_generations	generation 3 begin
+[INFO]:2021-02-20 18:40:40	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:40	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:40	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:40	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:40	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:40	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:40	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:40	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:40	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:40	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:40	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:40	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:40	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:40	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:40	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:40	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:40	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:40	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:40	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:40	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:40	run_generations	generation 4 begin
+[INFO]:2021-02-20 18:40:40	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:40	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:40	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:40	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:40	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:40	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:41	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:41	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:41	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:41	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:41	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:41	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:41	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:41	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:41	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:41	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:41	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:41	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:41	run_generations	Transmitting phase
+[INFO]:2021-02-20 18:40:41	run_generations	Receiving phase
+[INFO]:2021-02-20 18:40:41	run_generations	run completed

@@ -50,13 +50,14 @@ class Node(Turtle):
         if (new_neighbor not in self.neighbors) and (new_neighbor != self):
             self.neighbors.append(new_neighbor)
 
-    def sense_spectrum(self, packet_loss_percent):
+    def sense_spectrum(self, packet_loss_percent, logger=None):
         # To simulate pathloss effect
         packet_loss_prob = packet_loss_percent/100
         weights = [1-packet_loss_prob, packet_loss_prob]
         # list of received messages after channel effect
         rx_msg = []
         if len(self.avaliable_messages) > 0:
+
             # There are messages in the channel
             for channel_msg in self.avaliable_messages:
                 # Weighted random choice of success of fail
@@ -65,31 +66,33 @@ class Node(Turtle):
                     rx_msg.append(channel_msg)
                 else:
                     continue
-        
+
         # discard other available messages
         self.avaliable_messages = []
         # not all received messages can fit into the buffer
         if len(rx_msg) > self.buffer_size:
-            rx_msg = np.random.choice(rx_msg, size=(self.buffer_size), replace=False)
+            rx_msg = np.random.choice(rx_msg, size=(
+                self.buffer_size), replace=False)
         # successful messages to the buffer
         self.rx_buffer = rx_msg
 
     def access_rx_buffer(self, new_packet):
         self.avaliable_messages.append(new_packet)
 
-    def rx_packet(self):
+    def rx_packet(self, logger=None):
         # check if data in buffer
-        print("Node {},".format(self.node_id), end="")
+        log_msg = "Node {},rx,".format(self.node_id)
         if len(self.rx_buffer) > 0:
-            print("msg ", end="")
+            log_msg += "msg "
             # decode or recode
             for data in self.rx_buffer:
-                print("{} ".format(data), end="")
-            print("")
+                log_msg += "{} ".format(data)
             # Clear buffer
             self.rx_buffer = []
+            logger.info(log_msg)
         else:
-            print("no buffered packets")
+            log_msg +="no buffered packets"
+            logger.warning(log_msg)
 
     def tx_packet(self, rx_node, tx_message):
         # Decode Message
@@ -97,8 +100,8 @@ class Node(Turtle):
         # Send Packet, to current rx_node
         rx_node.access_rx_buffer(tx_packet)
 
-    def broadcast_message(self, tx_message):
-        print("Node {},msg {}, broadcast_to {}".format(
+    def broadcast_message(self, tx_message, logger=None):
+        logger.info("Node {},tx,msg {},broadcast_to {}".format(
             self.node_id, tx_message, len(self.neighbors)))
         for node in self.neighbors:
             self.tx_packet(node, tx_message)
