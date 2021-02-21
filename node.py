@@ -8,9 +8,10 @@ class Node(Turtle):
         super().__init__()
         self.node_id = node_id
         self.coverage = n_coverage
-        self.node_rgb = (np.random.rand(),
-                         np.random.rand(),
-                         np.random.rand())
+        self.node_rgb = "dark orange"
+        # self.node_rgb = (np.random.rand(),
+        #                  np.random.rand(),
+        #                  np.random.rand())
         self.home = place
         self.place_node(place)
         self.helper = Turtle()
@@ -24,14 +25,18 @@ class Node(Turtle):
         self.helper.hideturtle()
         self.helper.pu()
         self.helper.goto(self.pos())
-        self.helper.color(self.node_rgb)
+        self.helper.color("saddle brown")
+        self.helper.pencolor("saddle brown")
 
     def place_node(self, position):
         self.shape("circle")
         self.penup()
         self.color(self.node_rgb)
+        self.pencolor("black")
         self.speed("fastest")
+        self.clear()
         self.goto(position)
+        self.write(f"{self.node_id}  ", align="Right", font=("Calibri", 12, "bold"))
 
     def show_coverage(self):
         self.helper.goto(self.xcor(), self.ycor() - self.coverage)

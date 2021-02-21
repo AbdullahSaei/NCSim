@@ -1,6 +1,7 @@
 from turtle import Screen, Turtle
 from node import Node
 from platform import system as os_type
+import ncsim_visualizer as ncsv
 import json
 import time
 import numpy as np
@@ -25,10 +26,18 @@ CFG_PARAM = cfg.get('Parameters', {"unk": "unk"})
 # Fetch Screen related Configurations, or set default values.
 SCREEN_WIDTH = int(CFG_SIM.get('screen_width', 600))
 SCREEN_HEIGHT = int(CFG_SIM.get('screen_height', 600))
-SCREEN_MARGIN = int(CFG_SIM.get('screen_margin', 30))
+SCREEN_HEADER = CFG_SIM.get('screen_header', "NCSim Visualizer")
+HEADER_FONT_SIZE = int(CFG_SIM.get('header_font_size', 30))
+TEXT_FONT_SIZE = int(CFG_SIM.get('text_font_size', 12))
+SCREEN_MARGIN = int(CFG_SIM.get('screen_margin', 50))
+HEAD_MARGIN = int(CFG_SIM.get('head_margin', 150))
+MESSAGE_MARGIN = int(CFG_SIM.get('message_margin', 100))
 SCREEN_BGCOLOR = CFG_SIM.get('screen_bgcolor', 'black')
 SCREEN_REFRESH_TIME = int(CFG_SIM.get("screen_refresh_time", 0.1))
 SCREEN_TITLE = CFG_SIM.get('screen_title', 'Network Coding Simulator')
+
+TOTAL_WIDTH = SCREEN_WIDTH + (2 * SCREEN_MARGIN)
+TOTAL_HEIGHT = SCREEN_HEIGHT + HEAD_MARGIN + SCREEN_MARGIN
 
 # Fetch Nodes related Configurations, or set default values.
 NUM_OF_NODES = int(CFG_PARAM.get("nodes_num", '10'))
@@ -68,59 +77,52 @@ kpi.setLevel(logging.DEBUG)
 
 class NCSim:
     def __init__(self):
-        self.screen = Screen()                      # Create Screen Object
-        self.nodes = []                             # Create List of Nodes Variable
-        self.screen_init()                          # Call Screen Init Method
-        self.create_nodes()                         # Call Nodes Init Method
-
-    def screen_init(self):
-        # Setup Screen Size
-        self.screen.setup(width=SCREEN_WIDTH, height=SCREEN_HEIGHT)
-        # Setup Screen Coloring
-        self.screen.bgcolor(SCREEN_BGCOLOR)
-        # Setup Screen Title
-        self.screen.title(SCREEN_TITLE)
-        # Stop Auto-update Screen changes
-        self.screen.tracer(0)
-        # Add app icon
-        LOGO_PATH = "assets/favicon.ico"
-        # do not forget "@" symbol and .xbm format for Ubuntu
-        LOGO_LINUX_PATH = "@assets/favicon_linux.xbm"
-        root = self.screen._root
-        if CFG_OS.lower() == "linux":
-            root.iconbitmap(LOGO_LINUX_PATH)
-            trace.info("running on linux")
-        else:
-            root.iconbitmap(LOGO_PATH)
-            trace.info("running on windows or macOS")
+        # Call to NCSimVisualizer create Screen
+        self.screen = ncsv.NCSimVisualizer()
+        # Create List of Nodes Variable
+        self.nodes = []
+        # Call Nodes Init Method
+        self.create_nodes()
+        # # Add app icon
+        # LOGO_PATH = "assets/favicon.ico"
+        # # do not forget "@" symbol and .xbm format for Ubuntu
+        # LOGO_LINUX_PATH = "@assets/favicon_linux.xbm"
+        # root = self.screen._root
+        # if CFG_OS.lower() == "linux":
+        #     root.iconbitmap(LOGO_LINUX_PATH)
+        #     trace.info("running on linux")
+        # else:
+        #     root.iconbitmap(LOGO_PATH)
+        #     trace.info("running on windows or macOS")
 
     def create_nodes(self):
+        #LOGGING:
+        self.screen.visual_output_msg(f"Creating {NUM_OF_NODES} node(s)")
         trace.info(f"creating {NUM_OF_NODES} node(s)")
         # Loop over #no. of nodes to create its objects
         for index in range(NUM_OF_NODES):
             # Append the created node to list of nodes
             self.nodes.append(Node(index, n_coverage=NODE_COVERAGE,
                                    buf_size=NODE_BUFFER_SIZE))
+        # LOGGING:
+        self.screen.visual_output_msg(f"Setting topology to {TOPOLOGY_TYPE}")
         trace.info(f"setting topology to {TOPOLOGY_TYPE}")
         # Adjust Nodes Co-ordinates according to topology
         self.draw_network(TOPOLOGY_TYPE)
         # Update Screen Changes
-        self.screen.update()
+        self.screen.screen_refresh()
 
     def draw_network(self, topology):
         draw_cursor = Turtle()                  # Create A Drawing Cursor
-        draw_cursor.color("white")
+        draw_cursor.color("black")
         draw_cursor.ht()                        # Hide the Cursor
         draw_cursor.penup()                     # Hide Cursor pen movements
-        draw_cursor.setposition(0, (SCREEN_HEIGHT/2)-SCREEN_MARGIN)
-        draw_cursor.write(f"{topology.title()} topology - {NUM_OF_NODES} nodes",
-                          align="Center", font=("Arial", 14, "normal"))
 
         # IF RING TOPOLOGY
         if topology == "ring":
-            ring_radius = SCREEN_HEIGHT/3                           # Set the Ring Radius
+            ring_radius = SCREEN_HEIGHT/4                           # Set the Ring Radius
             # Adjust Cursor starting position
-            draw_cursor.setposition(0, int(-ring_radius))
+            draw_cursor.setposition(0, int(-ring_radius-50))
             node_spacing = 360/NUM_OF_NODES                         # Set Node Spacing
             # Loop over the Nodes and Set Positions
             for index in range(NUM_OF_NODES):
@@ -134,8 +136,8 @@ class NCSim:
             # Set the Chain Length
             chain_length = SCREEN_WIDTH
             # Adjust Cursor starting position
-            draw_cursor.setposition(-(chain_length/2) +
-                                    SCREEN_MARGIN, -(chain_length/2)+SCREEN_MARGIN)
+            draw_cursor.setposition(-(chain_length/2) + SCREEN_MARGIN,
+                                    -(chain_length/2) + SCREEN_MARGIN)
             # To draw diagonally
             draw_cursor.left(45)
             # Loop over the Nodes and Set Positions
@@ -152,7 +154,9 @@ class NCSim:
             # Constants
             LOW_VALUE = 0
             HIGH_VALUE = 1
-            FACTOR = 0.75
+
+            ## IF THERE ARE NODES AWAY ADJUST FACTOR DECREASE IT
+            FACTOR = 1.1
             # Set the Quarter Size
             quarter_size = int(NODE_COVERAGE*FACTOR)
             # Set the Quarter Areas in list Variable, X and Y Lower and Higher values
@@ -190,9 +194,11 @@ class NCSim:
     def discover_network(self):
         # Loop over all nodes
         for node in self.nodes:
+            # LOGGING:
+            self.screen.visual_output_msg(f"Node {node.node_id} discovering its neighbors")
             trace.info(f"node {node.node_id} discovering its neighbors")
             node.show_coverage()
-            self.screen.update()
+            self.screen.screen_refresh()
             # Scan all nodes within the coverage area
             for neighbor in self.nodes:
                 if node.distance(neighbor) < node.coverage:
@@ -200,8 +206,12 @@ class NCSim:
             time.sleep(0.05)
             # Check if there was no neighbors
             if len(node.neighbors) == 0:
+                # LOGGING:
+                self.screen.visual_output_msg(f"Node {node.node_id} has no neighbors")
                 trace.warning(f"node {node.node_id} has no neighbors")
             else:
+                # LOGGING:
+                self.screen.visual_output_msg(f"Node {node.node_id} has {len(node.neighbors)} neighbors")
                 trace.info(
                     f"node {node.node_id} has {len(node.neighbors)} neighbors")
             node.hide_coverage()
@@ -218,28 +228,31 @@ class NCSim:
         _alphabet = string.ascii_uppercase + string.digits
         _alphabet_list = [char for char in _alphabet]
         for g in range(generations):
+            # LOGGING:
             trace.info(f"generation {g} begin")
             print("\n Generation {} \n".format(g))
             for _ in range(rounds):
+                # LOGGING:
+                self.screen.visual_output_msg(f"Generation {g} begin, Transmitting phase")
                 trace.info("Transmitting phase")
                 # All transmit in random order
                 for node in np.random.permutation(self.nodes):
-                    self.screen.update()
+                    self.screen.screen_refresh()
                     time.sleep(SCREEN_REFRESH_TIME)
                     msg = "".join(np.random.choice(
                         _alphabet_list, size=packet_size))
                     node.broadcast_message(msg, logger=kpi)
 
+                # LOGGING:
+                self.screen.visual_output_msg(f"Generation {g} begin, Receiving phase")
                 trace.info("Receiving phase")
                 # All receive in random order
                 for node in np.random.permutation(self.nodes):
-                    self.screen.update()
+                    self.screen.screen_refresh()
                     time.sleep(SCREEN_REFRESH_TIME)
                     node.sense_spectrum(packet_loss, logger=kpi)
                     node.rx_packet(kpi)
-
+        # LOGGING:
+        self.screen.visual_output_msg("Generations run completed!")
         trace.info("run completed")
         print("run completed")
-
-    def mainloop(self):
-        self.screen.exitonclick()

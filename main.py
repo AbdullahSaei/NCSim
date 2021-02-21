@@ -28,11 +28,12 @@ sim = NCSim()
 
 
 def main():
+
     sim.discover_network()
     sim.run_generations()
     print("Done!")
 
-    sim.mainloop()
+    sim.screen.mainloop()
 
 
 if __name__ == '__main__':
