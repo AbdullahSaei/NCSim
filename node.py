@@ -8,52 +8,35 @@ class Node(Turtle):
         super().__init__()
         self.node_id = node_id
         self.coverage = n_coverage
-        self.node_rgb = "dark orange"
-        # self.node_rgb = (np.random.rand(),
-        #                  np.random.rand(),
-        #                  np.random.rand())
+        self.node_color = "dark orange"
         self.home = place
         self.place_node(place)
-        self.helper = Turtle()
-        self.setup_helper()
         self.buffer_size = buf_size
         self.neighbors = []
         self.avaliable_messages = []
         self.rx_buffer = []
 
-    def setup_helper(self):
-        self.helper.hideturtle()
-        self.helper.pu()
-        self.helper.goto(self.pos())
-        self.helper.color("saddle brown")
-        self.helper.pencolor("saddle brown")
-
-    def place_node(self, position):
+    def place_node(self, position, only_fd=None):
         self.shape("circle")
         self.penup()
-        self.color(self.node_rgb)
+        self.goto((0,0))
+        self.color(self.node_color)
         self.pencolor("black")
         self.speed("fastest")
         self.clear()
-        self.goto(position)
+        if only_fd:
+            self.fd(position)
+        else:
+            self.goto(position)
         self.write(f"{self.node_id}  ", align="Right", font=("Calibri", 12, "bold"))
-
-    def show_coverage(self):
-        self.helper.goto(self.xcor(), self.ycor() - self.coverage)
-        self.helper.pendown()
-        self.helper.circle(self.coverage)
-        self.helper.penup()
-        self.helper.goto(self.pos())
-
-    def hide_coverage(self):
-        self.helper.pendown()
-        self.helper.clear()
-        self.helper.penup()
 
     def add_neighbor(self, new_neighbor):
         # To exclude duplications and adding self node to neighbors
         if (new_neighbor not in self.neighbors) and (new_neighbor != self):
             self.neighbors.append(new_neighbor)
+
+    def get_neighbors(self):
+        return self.neighbors
 
     def sense_spectrum(self, packet_loss_percent, logger=None):
         # To simulate pathloss effect

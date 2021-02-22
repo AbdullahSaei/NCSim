@@ -16,13 +16,14 @@
     "screen_bgcolor": "white"
   },
   "Parameters": {
-    "nodes_num": 10,
-    "seed": 15,
+    "nodes_num": 48,
+    "seed": 32,
     "node_buffer_size": 2,
     "generations_num": 5,
     "generation_time_ms": 1000,
     "action_time_ms": 100,
-    "topology": "chain",
+    "topology": "grid",
+    "min_dist_between_nodes": 50,
     "nodes_coverage": 100,
     "packet_size_bytes": 5,
     "packet_loss_percent": 0

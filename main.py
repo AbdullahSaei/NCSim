@@ -1,5 +1,4 @@
 from ncsim import NCSim
-from node import Node
 import kodo
 import os
 

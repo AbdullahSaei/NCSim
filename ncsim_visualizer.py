@@ -38,9 +38,19 @@ TOPOLOGY_TYPE = CFG_PARAM.get('topology', 'random')
 
 
 class NCSimVisualizer:
-    def __init__(self):
+    def __init__(self, CFG_OS):
         # Create Screen Object
         self.screen = Screen()
+
+        # Add app icon
+        LOGO_PATH = "assets/favicon.ico"
+        # do not forget "@" symbol and .xbm format for Ubuntu
+        LOGO_LINUX_PATH = "@assets/favicon_linux.xbm"
+        root = self.screen._root
+        if CFG_OS.lower() == "linux":
+            root.iconbitmap(LOGO_LINUX_PATH)
+        else:
+            root.iconbitmap(LOGO_PATH)
 
         # Create Screen Layout Cursor
         self.layout_cursor = Turtle()
@@ -54,6 +64,13 @@ class NCSimVisualizer:
         self.msg_cursor.ht()
         self.msg_cursor.penup()
         self.msg_cursor.color("midnight blue")
+
+        # Create Screen coverage Cursor
+        self.cvrg_cursur = Turtle()
+        self.cvrg_cursur.ht()
+        self.cvrg_cursur.penup()
+        self.cvrg_cursur.pensize(2)
+        self.cvrg_cursur.color("saddle brown")
 
         # Create Screen Send Packet Cursor
         self.snd_pckt = Turtle()
@@ -120,11 +137,39 @@ class NCSimVisualizer:
         self.msg_cursor.clear()
         self.msg_cursor.write(f"{message}", align="Left", font=("Calibri", TEXT_FONT_SIZE, "bold"))
 
-    def visual_send_packet(self, tx_cor, rx_cor):
-        self.snd_pckt.setposition(tx_cor)
-        self.snd_pckt.pendown()
-        self.snd_pckt.setposition(rx_cor)
-        self.snd_pckt.penup()
+    def visual_send_packet(self, tx_node, rx_nodes):
+        # draw arrow for all neighbors
+        for rx_node in rx_nodes:
+            self.snd_pckt.setposition(tx_node.pos())
+            self.snd_pckt.pendown()
+            self.snd_pckt.setheading(self.snd_pckt.towards(rx_node.pos()))
+            self.snd_pckt.setposition(rx_node.pos())
+            self.snd_pckt.bk(11)
+
+            # Drawing arrow head
+            self.snd_pckt.left(45)
+            self.snd_pckt.backward(10)
+            self.snd_pckt.forward(10)
+            self.snd_pckt.right(90)
+            self.snd_pckt.backward(10)
+            self.snd_pckt.penup()
+
+    def clear_send_packets(self):
+        self.snd_pckt.pd()
+        self.snd_pckt.clear()
+        self.snd_pckt.pu()
+
+    def show_coverage(self, node):
+        self.cvrg_cursur.goto(node.xcor(), node.ycor() - node.coverage)
+        self.cvrg_cursur.pendown()
+        self.cvrg_cursur.circle(node.coverage)
+        self.cvrg_cursur.penup()
+        self.cvrg_cursur.goto(node.pos())
+
+    def hide_coverage(self):
+        self.cvrg_cursur.pendown()
+        self.cvrg_cursur.clear()
+        self.cvrg_cursur.penup()
 
     def screen_refresh(self):
         self.screen.update()

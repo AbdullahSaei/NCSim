@@ -41,6 +41,7 @@ TOTAL_HEIGHT = SCREEN_HEIGHT + HEAD_MARGIN + SCREEN_MARGIN
 
 # Fetch Nodes related Configurations, or set default values.
 NUM_OF_NODES = int(CFG_PARAM.get("nodes_num", '10'))
+MIN_DIST_NODES = int(CFG_PARAM.get('min_dist_between_nodes', 20))
 SEED_VALUE = int(CFG_PARAM.get('seed', 0))
 NODE_COVERAGE = int(CFG_PARAM.get("nodes_coverage", '100'))
 NODE_BUFFER_SIZE = int(CFG_PARAM.get('node_buffer_size', 1))
@@ -78,26 +79,18 @@ kpi.setLevel(logging.DEBUG)
 class NCSim:
     def __init__(self):
         # Call to NCSimVisualizer create Screen
-        self.screen = ncsv.NCSimVisualizer()
+        self.screen = ncsv.NCSimVisualizer(CFG_OS)
+        # Log operating system
+        trace.info(f"running on {CFG_OS.lower()}")
         # Create List of Nodes Variable
         self.nodes = []
         # Call Nodes Init Method
         self.create_nodes()
-        # # Add app icon
-        # LOGO_PATH = "assets/favicon.ico"
-        # # do not forget "@" symbol and .xbm format for Ubuntu
-        # LOGO_LINUX_PATH = "@assets/favicon_linux.xbm"
-        # root = self.screen._root
-        # if CFG_OS.lower() == "linux":
-        #     root.iconbitmap(LOGO_LINUX_PATH)
-        #     trace.info("running on linux")
-        # else:
-        #     root.iconbitmap(LOGO_PATH)
-        #     trace.info("running on windows or macOS")
 
     def create_nodes(self):
-        #LOGGING:
-        self.screen.visual_output_msg(f"Creating {NUM_OF_NODES} node(s)")
+        # LOGGING:
+        self.screen.visual_output_msg(
+            f"Set {NUM_OF_NODES} nodes to {TOPOLOGY_TYPE} topology")
         trace.info(f"creating {NUM_OF_NODES} node(s)")
         # Loop over #no. of nodes to create its objects
         for index in range(NUM_OF_NODES):
@@ -105,7 +98,6 @@ class NCSim:
             self.nodes.append(Node(index, n_coverage=NODE_COVERAGE,
                                    buf_size=NODE_BUFFER_SIZE))
         # LOGGING:
-        self.screen.visual_output_msg(f"Setting topology to {TOPOLOGY_TYPE}")
         trace.info(f"setting topology to {TOPOLOGY_TYPE}")
         # Adjust Nodes Co-ordinates according to topology
         self.draw_network(TOPOLOGY_TYPE)
@@ -113,6 +105,8 @@ class NCSim:
         self.screen.screen_refresh()
 
     def draw_network(self, topology):
+        # for case insensitivity
+        topology = topology.lower()
         draw_cursor = Turtle()                  # Create A Drawing Cursor
         draw_cursor.color("black")
         draw_cursor.ht()                        # Hide the Cursor
@@ -131,6 +125,7 @@ class NCSim:
                 node_position = draw_cursor.position()              # fetch Cursor Position
                 # Locate Node where Cursor Stops
                 self.nodes[index].place_node(node_position)
+
         # IF CHAIN TOPOLOGY
         elif topology == "chain":
             # Set the Chain Length
@@ -147,6 +142,7 @@ class NCSim:
                 node_position = draw_cursor.position()     # fetch Cursor Position
                 # Locate Node where Cursor Stops
                 node.place_node(node_position)
+
         # IF RANDOM TOPOLOGY
         elif topology == "random":
             # Pesudo random seed
@@ -155,8 +151,8 @@ class NCSim:
             LOW_VALUE = 0
             HIGH_VALUE = 1
 
-            ## IF THERE ARE NODES AWAY ADJUST FACTOR DECREASE IT
-            FACTOR = 1.1
+            # IF THERE ARE NODES AWAY ADJUST FACTOR DECREASE IT
+            FACTOR = 1.25
             # Set the Quarter Size
             quarter_size = int(NODE_COVERAGE*FACTOR)
             # Set the Quarter Areas in list Variable, X and Y Lower and Higher values
@@ -169,52 +165,130 @@ class NCSim:
                               {"X_RANGE": [0, quarter_size],
                                "Y_RANGE": [-quarter_size, 0]}]     # Q4
             # Loop over the Nodes and Set Positions
-            for index in range(NUM_OF_NODES):
-                # Randomly Set the Node X Position, in specific Quarter
-                x_position = np.random.randint(
-                    quarters_areas[index % 4]["X_RANGE"][LOW_VALUE],
-                    quarters_areas[index % 4]["X_RANGE"][HIGH_VALUE])
-                # Randomly Set the Node Y Position, in specific Quarter
-                y_position = np.random.randint(
-                    quarters_areas[index % 4]["Y_RANGE"][LOW_VALUE],
-                    quarters_areas[index % 4]["Y_RANGE"][HIGH_VALUE])
-                # print((index % 4))
-                # print(x_position, y_position)
-                # Locate Node where Cursor Stops
-                self.nodes[index].place_node((x_position, y_position))
+            for index, node in enumerate(self.nodes):
+                success = False
+                while not success:
+                    success = True
+                    # Randomly Set the Node X Position, in specific Quarter
+                    x_position = np.random.randint(
+                        quarters_areas[index % 4]["X_RANGE"][LOW_VALUE],
+                        quarters_areas[index % 4]["X_RANGE"][HIGH_VALUE])
+                    # Randomly Set the Node Y Position, in specific Quarter
+                    y_position = np.random.randint(
+                        quarters_areas[index % 4]["Y_RANGE"][LOW_VALUE],
+                        quarters_areas[index % 4]["Y_RANGE"][HIGH_VALUE])
+                    # Locate Node where Cursor Stops
+                    node.place_node((x_position, y_position))
+                    # Check if there is overlapping nodes
+                    for neighbor in self.nodes:
+                        # Check until reaching node index
+                        if neighbor == node:
+                            break
+                        if node.distance(neighbor) < MIN_DIST_NODES:
+                            trace.warning(
+                                f"node {node.node_id} was overlapping node {neighbor.node_id}")
+                            success = False
+
         # IF HYBRID TOPOLOGY
         elif topology == "hybrid":
             pass
         # IF BUTTERFLY TOPOLOGY
         elif topology == "butterfly":
             pass
+        # IF GRID TOPOLOGY
+        elif topology == "grid":
+            # Get nearest root + 1
+            def nearest_square(limit):
+                answer = 0
+                while (answer+1)**2 < limit:
+                    answer += 1
+                return answer+1
+            
+            # Set the Chain Length
+            chain_v_length = SCREEN_HEIGHT - HEAD_MARGIN - MESSAGE_MARGIN
+            chain_h_length = SCREEN_WIDTH - SCREEN_MARGIN * 2
+            chains = np.array_split(self.nodes, nearest_square(NUM_OF_NODES))
+            for index, chain in enumerate(chains):
+                v_move = (chain_v_length/len(chains)) * index
+                # Adjust Cursor starting position
+                draw_cursor.setposition(-(chain_h_length/2 + SCREEN_MARGIN),
+                                        (chain_v_length/2) - v_move - MESSAGE_MARGIN )
+                # Loop over the Nodes and Set Positions
+                for node in chain:
+                    # Move Cursor forward by node spacing value
+                    draw_cursor.fd(chain_h_length/NUM_OF_NODES + MIN_DIST_NODES)
+                    node_position = draw_cursor.position()     # fetch Cursor Position
+                    # Locate Node where Cursor Stops
+                    node.place_node(node_position)
+
+        # IF STAR TOPOLOGY
+        elif topology == "star":
+            # Pesudo random seed
+            np.random.seed(SEED_VALUE)
+            # Node 0 is a central node reaching all other nodes
+            self.nodes[0].place_node((0, 0))
+            self.nodes[0].coverage = MAX_COVERAGE = SCREEN_HEIGHT / \
+                2 - SCREEN_MARGIN  # Set the Ring Radius
+
+            # Adjust Cursor starting position
+            draw_cursor.setposition(0, int(-MAX_COVERAGE-50))
+            node_spacing = 360/NUM_OF_NODES                         # Set Node Spacing
+            # Loop over the Nodes and Set Positions
+            for i, node in enumerate(self.nodes):
+                # skip central node
+                if i == 0:
+                    continue
+                # Move Cursor in circle shape by node spacing angle
+                draw_cursor.circle(MAX_COVERAGE, node_spacing)
+                # Set heading towards the drawing curser
+                node.setheading(node.towards(draw_cursor.pos()))
+                # Move random fd distance
+                success = False
+                while not success:
+                    success = True
+                    node_position = np.random.randint(
+                        MIN_DIST_NODES, MAX_COVERAGE)
+                    node.place_node(node_position, only_fd=True)
+                    # Check if there is overlapping nodes
+                    for index, neighbor in enumerate(self.nodes):
+                        # skip central node
+                        if index == 0:
+                            continue
+                        # Check until reaching node index
+                        if neighbor == node:
+                            break
+                        if node.distance(neighbor) < MIN_DIST_NODES:
+                            trace.warning(
+                                f"node {node.node_id} was overlapping node {neighbor.node_id}")
+                            success = False
+                # Set node coverage to at least reach central node
+                node.coverage = node_position + 10
+
         else:
             raise Warning("Invalid Topology input.")
 
     def discover_network(self):
         # Loop over all nodes
+        self.screen.visual_output_msg(f"Nodes are discovering their neighbors")
         for node in self.nodes:
             # LOGGING:
-            self.screen.visual_output_msg(f"Node {node.node_id} discovering its neighbors")
             trace.info(f"node {node.node_id} discovering its neighbors")
-            node.show_coverage()
+            self.screen.show_coverage(node)
             self.screen.screen_refresh()
             # Scan all nodes within the coverage area
             for neighbor in self.nodes:
                 if node.distance(neighbor) < node.coverage:
                     node.add_neighbor(neighbor)
-            time.sleep(0.05)
+            time.sleep(0.1)
             # Check if there was no neighbors
             if len(node.neighbors) == 0:
                 # LOGGING:
-                self.screen.visual_output_msg(f"Node {node.node_id} has no neighbors")
                 trace.warning(f"node {node.node_id} has no neighbors")
             else:
                 # LOGGING:
-                self.screen.visual_output_msg(f"Node {node.node_id} has {len(node.neighbors)} neighbors")
                 trace.info(
                     f"node {node.node_id} has {len(node.neighbors)} neighbors")
-            node.hide_coverage()
+            self.screen.hide_coverage()
 
     # Simulation Sequence
     def run_generations(self):
@@ -227,31 +301,43 @@ class NCSim:
         # for random message generation
         _alphabet = string.ascii_uppercase + string.digits
         _alphabet_list = [char for char in _alphabet]
-        for g in range(generations):
+        for g in range(1, generations+1):
             # LOGGING:
             trace.info(f"generation {g} begin")
             print("\n Generation {} \n".format(g))
-            for _ in range(rounds):
+            for r in range(1, rounds+1):
                 # LOGGING:
-                self.screen.visual_output_msg(f"Generation {g} begin, Transmitting phase")
-                trace.info("Transmitting phase")
+                log_msg = f"Generation {g}/{generations} round {r}/{rounds}, Transmitting phase"
+                self.screen.visual_output_msg(log_msg)
+                trace.info(log_msg)
                 # All transmit in random order
                 for node in np.random.permutation(self.nodes):
+                    self.screen.visual_send_packet(node, node.get_neighbors())
                     self.screen.screen_refresh()
-                    time.sleep(SCREEN_REFRESH_TIME)
+                    time.sleep(SCREEN_REFRESH_TIME+0.5)
                     msg = "".join(np.random.choice(
                         _alphabet_list, size=packet_size))
                     node.broadcast_message(msg, logger=kpi)
+                    self.screen.clear_send_packets()
+
+                # TODO remove this delay
+                time.sleep(0.1)
 
                 # LOGGING:
-                self.screen.visual_output_msg(f"Generation {g} begin, Receiving phase")
-                trace.info("Receiving phase")
+                log_msg = f"Generation {g}/{generations} round {r}/{rounds}, Receiving phase"
+                trace.info(log_msg)
+                # nothing to show when nodes are digesting the received messages
+                self.screen.visual_output_msg(log_msg)
+                self.screen.screen_refresh()
+
                 # All receive in random order
                 for node in np.random.permutation(self.nodes):
-                    self.screen.screen_refresh()
-                    time.sleep(SCREEN_REFRESH_TIME)
                     node.sense_spectrum(packet_loss, logger=kpi)
                     node.rx_packet(kpi)
+
+                # TODO remove this delay
+                time.sleep(0.1)
+
         # LOGGING:
         self.screen.visual_output_msg("Generations run completed!")
         trace.info("run completed")
