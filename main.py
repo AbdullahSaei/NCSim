@@ -23,23 +23,25 @@ encoder.set_symbols_storage(data_in)
 data_out = bytearray(decoder.block_size())
 decoder.set_symbols_storage(data_out)
 
-sim = NCSim()
 
 
 def main():
+    #Normal Scenario
+    # Create the simulation
+    sim = NCSim()
 
+    # Nodes discover its neighbors
     sim.discover_network()
 
-    # I Put it here for the sake of testing
-    sim.screen.show_screen_button()
-
+    # Run the configured simulation
     sim.run_generations()
-    print("Done!")
+    print("Done Simulation")
 
-    # This is the Correct Position after Generations finishes and KPI file is created
-    sim.screen.show_screen_button()
+    # Analysis phase
+    sim.set_analysis()
 
-    sim.screen.mainloop()
+    # Keep window open
+    sim.end_keep_open()
 
 
 if __name__ == '__main__':

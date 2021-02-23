@@ -216,7 +216,7 @@ class NCSim:
                 # Loop over the Nodes and Set Positions
                 for node in chain:
                     # Move Cursor forward by node spacing value
-                    draw_cursor.fd(chain_h_length/NUM_OF_NODES + MIN_DIST_NODES)
+                    draw_cursor.fd(chain_h_length/len(chain))
                     node_position = draw_cursor.position()     # fetch Cursor Position
                     # Locate Node where Cursor Stops
                     node.place_node(node_position)
@@ -265,7 +265,8 @@ class NCSim:
                 node.coverage = node_position + 10
 
         else:
-            raise Warning("Invalid Topology input.")
+            trace.warning("Invalid Topology input, using Random")
+            self.draw_network("grid")
 
     def discover_network(self):
         # Loop over all nodes
@@ -289,6 +290,10 @@ class NCSim:
                 trace.info(
                     f"node {node.node_id} has {len(node.neighbors)} neighbors")
             self.screen.hide_coverage()
+
+    # Analysis Sequence
+    def set_analysis(self):
+        self.screen.enable_btns()
 
     # Simulation Sequence
     def run_generations(self):
@@ -342,3 +347,6 @@ class NCSim:
         self.screen.visual_output_msg("Generations run completed!")
         trace.info("run completed")
         print("run completed")
+
+    def end_keep_open(self):
+        self.screen.mainloop()

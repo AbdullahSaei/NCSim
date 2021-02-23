@@ -1,4 +1,6 @@
 from turtle import Screen, Turtle, onscreenclick, done, listen
+import tkinter as tk
+from tkinter import ttk 
 import json
 
 try:
@@ -48,11 +50,18 @@ class NCSimVisualizer:
         LOGO_PATH = "assets/favicon.ico"
         # do not forget "@" symbol and .xbm format for Ubuntu
         LOGO_LINUX_PATH = "@assets/favicon_linux.xbm"
-        root = self.screen._root
+
+        # Use the same Tk root with turtle:
+        assert isinstance(self.screen._root, tk.Tk)  # True
+        self.root = self.screen._root
+
         if CFG_OS.lower() == "linux":
-            root.iconbitmap(LOGO_LINUX_PATH)
+            self.root.iconbitmap(LOGO_LINUX_PATH)
         else:
-            root.iconbitmap(LOGO_PATH)
+            self.root.iconbitmap(LOGO_PATH)
+
+        # tkinter use same root
+        self.controls = tk.Frame(self.root)
 
         # Create Screen Layout Cursor
         self.layout_cursor = Turtle()
@@ -83,6 +92,9 @@ class NCSimVisualizer:
 
         # Call Screen Init Method
         self.screen_init()
+
+        # Create buttons
+        self.create_btns()
 
     def screen_init(self):
         # Set Screen Dimensions and Coloring
@@ -173,21 +185,37 @@ class NCSimVisualizer:
         self.cvrg_cursur.clear()
         self.cvrg_cursur.penup()
 
-    def button_click(self, x, y):
-        # Button Borders
-        x1 = (int(TOTAL_WIDTH / 2)) - SCREEN_MARGIN - BUTTON_WIDTH - 10
-        x2 = (int(TOTAL_WIDTH / 2)) - SCREEN_MARGIN - 10
-        y1 = 10 + BUTTON_HEIGHT + SCREEN_MARGIN - (int(TOTAL_HEIGHT / 2))
-        y2 = 10 + SCREEN_MARGIN - (int(TOTAL_HEIGHT / 2))
+    def button_click(self):
+        print("Button pressed")
 
-        # If the Click in the Button Border
-        if (x > x1) and (x < x2) and (y < y1) and (y > y2):
-            # When Pressed, Execute Below>> Below is a testing code to be edited"
-            self.layout_cursor.color("black")
-            self.layout_cursor.setposition(0, 0)
-            self.layout_cursor.write("TestString: Button Pressed!", align="Left", font=("Calibri", 12, "bold"))
+        # When Pressed, Execute Below>> Below is a testing code to be edited"
+        self.layout_cursor.color("black")
+        self.layout_cursor.setposition(0, 0)
+        self.layout_cursor.write("TestString: Button Pressed!", align="Left", font=("Calibri", 12, "bold"))
 
-    def show_screen_button(self):
+    def enable_btns(self):
+        self.btn_show_analysis['state'] = 'normal'
+        print("button")
+
+    def create_btns(self):
+        self.style = ttk.Style()
+        self.style.theme_use('alt')
+        self.style.configure('TButton', background = 'midnight blue', foreground = 'white', 
+                              font=("Calibri", 12, "bold"), borderwidth=1, focusthickness=3,
+                              focuscolor='none')
+        self.style.map('TButton', background=[('disabled','gray'), ('active','medium blue')])
+
+        self.btn_show_analysis = ttk.Button(self.root, text="Analyze Data", 
+                command = self.button_click)
+
+        # Locate Coordinates
+        x_cor = TOTAL_WIDTH - SCREEN_MARGIN - BUTTON_WIDTH - 10
+        y_cor = TOTAL_HEIGHT - SCREEN_MARGIN - BUTTON_HEIGHT - 20
+
+        self.btn_show_analysis.place(x=x_cor, y=y_cor, width=BUTTON_WIDTH, height=BUTTON_HEIGHT)
+        self.btn_show_analysis['state'] = 'disabled'
+
+    def old_create_btns(self):
         # Locate Coordinates
         x_cor = (int(TOTAL_WIDTH / 2)) - SCREEN_MARGIN - BUTTON_WIDTH - 10
         y_cor = 10 + SCREEN_MARGIN - (int(TOTAL_HEIGHT / 2))
