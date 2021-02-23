@@ -1,4 +1,4 @@
-from turtle import Screen, Turtle
+from turtle import Screen, Turtle, onscreenclick, done, listen
 import json
 
 try:
@@ -28,6 +28,8 @@ MESSAGE_MARGIN = int(CFG_SIM.get('message_margin', 100))
 SCREEN_BGCOLOR = CFG_SIM.get('screen_bgcolor', 'black')
 SCREEN_REFRESH_TIME = int(CFG_SIM.get("screen_refresh_time", 0.1))
 SCREEN_TITLE = CFG_SIM.get('screen_title', 'Network Coding Simulator')
+BUTTON_WIDTH = int(CFG_SIM.get('button_width', 120))        # Recommended Config
+BUTTON_HEIGHT = int(CFG_SIM.get('button_height', 30))       # Recommended Config
 
 TOTAL_WIDTH = SCREEN_WIDTH + (2 * SCREEN_MARGIN)
 TOTAL_HEIGHT = SCREEN_HEIGHT + HEAD_MARGIN + SCREEN_MARGIN
@@ -170,6 +172,55 @@ class NCSimVisualizer:
         self.cvrg_cursur.pendown()
         self.cvrg_cursur.clear()
         self.cvrg_cursur.penup()
+
+    def button_click(self, x, y):
+        # Button Borders
+        x1 = (int(TOTAL_WIDTH / 2)) - SCREEN_MARGIN - BUTTON_WIDTH - 10
+        x2 = (int(TOTAL_WIDTH / 2)) - SCREEN_MARGIN - 10
+        y1 = 10 + BUTTON_HEIGHT + SCREEN_MARGIN - (int(TOTAL_HEIGHT / 2))
+        y2 = 10 + SCREEN_MARGIN - (int(TOTAL_HEIGHT / 2))
+
+        # If the Click in the Button Border
+        if (x > x1) and (x < x2) and (y < y1) and (y > y2):
+            # When Pressed, Execute Below>> Below is a testing code to be edited"
+            self.layout_cursor.color("black")
+            self.layout_cursor.setposition(0, 0)
+            self.layout_cursor.write("TestString: Button Pressed!", align="Left", font=("Calibri", 12, "bold"))
+
+    def show_screen_button(self):
+        # Locate Coordinates
+        x_cor = (int(TOTAL_WIDTH / 2)) - SCREEN_MARGIN - BUTTON_WIDTH - 10
+        y_cor = 10 + SCREEN_MARGIN - (int(TOTAL_HEIGHT / 2))
+        self.layout_cursor.setposition(x_cor, y_cor)
+
+        # Draw the Button Square Shaped Filled with Blue Color
+        self.layout_cursor.pensize(2)
+        self.layout_cursor.color("black", "midnight blue")
+        self.layout_cursor.pendown()
+        self.layout_cursor.begin_fill()
+        self.layout_cursor.fd(BUTTON_WIDTH)
+        self.layout_cursor.left(90)
+        self.layout_cursor.fd(BUTTON_HEIGHT)
+        self.layout_cursor.left(90)
+        self.layout_cursor.fd(BUTTON_WIDTH)
+        self.layout_cursor.left(90)
+        self.layout_cursor.fd(BUTTON_HEIGHT)
+        self.layout_cursor.end_fill()
+        self.layout_cursor.penup()
+        self.layout_cursor.lt(90)
+        self.layout_cursor.fd(17)
+        self.layout_cursor.left(90)
+        self.layout_cursor.fd(7)
+        # Write Button String
+        self.layout_cursor.color("white")
+        self.layout_cursor.write("Analyze Data", align="Left", font=("Calibri", 12, "bold"))
+
+        # Allow Screen to Sense any Pressed Mouse Left-Clicks
+        onscreenclick(self.button_click)    # When Click self.button_click() Method will run
+        # Enable Screen to listen actions
+        listen()
+        # Hang the Display, in order not to close
+        done()
 
     def screen_refresh(self):
         self.screen.update()

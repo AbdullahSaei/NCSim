@@ -29,8 +29,15 @@ sim = NCSim()
 def main():
 
     sim.discover_network()
+
+    # I Put it here for the sake of testing
+    sim.screen.show_screen_button()
+
     sim.run_generations()
     print("Done!")
+
+    # This is the Correct Position after Generations finishes and KPI file is created
+    sim.screen.show_screen_button()
 
     sim.screen.mainloop()
 

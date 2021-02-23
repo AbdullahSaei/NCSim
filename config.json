@@ -13,7 +13,9 @@
     "screen_margin": 30,
     "head_margin": 100,
     "message_margin": 50,
-    "screen_bgcolor": "white"
+    "screen_bgcolor": "white",
+    "button_width": 120,
+    "button_height": 30
   },
   "Parameters": {
     "nodes_num": 48,

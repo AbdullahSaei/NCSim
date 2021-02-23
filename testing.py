@@ -1,4 +1,4 @@
-from turtle import Screen, Turtle
+from turtle import Screen, Turtle, onscreenclick, listen, done
 from node import Node
 from platform import system as os_type
 import json
@@ -93,7 +93,47 @@ layout_cursor.setposition(x_cor, y_cor)
 layout_cursor.write(f"Number of nodes: 15", align="Left", font=("Calibri", TEXT_FONT, "bold"))
 
 
+# Add Button, Run the Testing.py itself to see the
+
+layout_cursor.pensize(2)
+BUTTON_WIDTH = 120  # Recommended Config
+BUTTON_HEIGHT = 30  # Recommended Config
+
+x_cor = (int(TOTAL_WIDTH/2)) - SCREEN_MARGIN - BUTTON_WIDTH - 10
+y_cor = 10 + SCREEN_MARGIN - (int(TOTAL_HEIGHT/2))
+layout_cursor.setposition(x_cor, y_cor)
+layout_cursor.pendown()
+layout_cursor.color("black", "midnight blue")
+layout_cursor.begin_fill()
+layout_cursor.fd(BUTTON_WIDTH)
+layout_cursor.left(90)
+layout_cursor.fd(BUTTON_HEIGHT)
+layout_cursor.left(90)
+layout_cursor.fd(BUTTON_WIDTH)
+layout_cursor.left(90)
+layout_cursor.fd(BUTTON_HEIGHT)
+layout_cursor.end_fill()
+layout_cursor.penup()
+layout_cursor.lt(90)
+layout_cursor.fd(17)
+layout_cursor.left(90)
+layout_cursor.fd(7)
+layout_cursor.color("white")
+layout_cursor.write("Analyze Data", align="Left", font=("Calibri", 12, "bold"))
 
 
 
-screen.exitonclick()
+def button_click(x, y):
+    x1 = (int(TOTAL_WIDTH / 2)) - SCREEN_MARGIN - BUTTON_WIDTH - 10
+    x2 = (int(TOTAL_WIDTH / 2)) - SCREEN_MARGIN - 10
+    y1 = 10 + BUTTON_HEIGHT + SCREEN_MARGIN - (int(TOTAL_HEIGHT / 2))
+    y2 = 10 + SCREEN_MARGIN - (int(TOTAL_HEIGHT / 2))
+    if (x > x1) and (x < x2) and (y < y1) and (y > y2):
+        layout_cursor.color("black")
+        layout_cursor.setposition(0, 0)
+        layout_cursor.write("Button Pressed!", align="Left", font=("Calibri", 12, "bold"))
+
+
+onscreenclick(button_click)
+listen()
+done()
