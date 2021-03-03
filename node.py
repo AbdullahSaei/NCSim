@@ -1,20 +1,37 @@
 from turtle import Turtle
 import numpy as np
-
+import kodo
 
 class Node(Turtle):
 
-    def __init__(self, node_id, n_coverage, buf_size=1, place=(0, 0)):
+    def __init__(self, node_id, **kwargs):
         super().__init__()
         self.node_id = node_id
-        self.coverage = n_coverage
+        self.coverage = int(kwargs.get("n_coverage",100))
         self.node_color = "dark orange"
-        self.home = place
-        self.place_node(place)
-        self.buffer_size = buf_size
+        self.buffer_size = int(kwargs.get("buf_size",100))
         self.neighbors = []
         self.avaliable_messages = []
         self.rx_buffer = []
+
+        # KODO CODE
+        def fifi(i):
+            switcher={
+                    "binary16":kodo.field.binary16,
+                    "binary8":kodo.field.binary8,
+                    "binary4":kodo.field.binary4,
+                    "binary":kodo.field.binary
+                }
+            return switcher.get(i,kodo.field.binary)
+        # Choose the finite field, the number of symbols (i.e. generation size)
+        # and the symbol size in bytes
+        field = fifi(kwargs.get("fifi"))
+        symbols = int(kwargs.get("num_of_nodes",5))
+        symbol_size = int(kwargs.get("packet_size",100))
+
+        # Create an encoder and a decoder
+        self.encoder = kodo.RLNCEncoder(field, symbols, symbol_size)
+        self.decoder = kodo.RLNCDecoder(field, symbols, symbol_size)
 
     def place_node(self, position, only_fd=None):
         self.shape("circle")
@@ -72,6 +89,11 @@ class Node(Turtle):
         log_msg = "Node {:2},rx,".format(self.node_id)
         if len(self.rx_buffer) > 0:
             log_msg += "msg "
+            # Define the data_out bytearray where the symbols should be decoded
+            # This bytearray must not go out of scope while the encoder exists!
+            data_out = bytearray(self.decoder.block_size())
+            self.decoder.set_symbols_storage(data_out)
+            
             # decode or recode
             for data in self.rx_buffer:
                 log_msg += "{} ".format(data)
@@ -85,6 +107,11 @@ class Node(Turtle):
     def tx_packet(self, rx_node, tx_message):
         # Decode Message
         tx_packet = "IAM{:02}X".format(self.node_id) + tx_message
+        # Generate some random data to encode. We create a bytearray of the same
+        # size as the encoder's block size and assign it to the encoder.
+        # This bytearray must not go out of scope while the encoder exists!
+        data_in = bytearray(tx_packet, encoding="utf-8")
+        self.encoder.set_symbols_storage(data_in)
         # Send Packet, to current rx_node
         rx_node.access_rx_buffer(tx_packet)
 

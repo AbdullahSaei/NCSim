@@ -47,6 +47,20 @@ NODE_COVERAGE = int(CFG_PARAM.get("nodes_coverage", '100'))
 NODE_BUFFER_SIZE = int(CFG_PARAM.get('node_buffer_size', 1))
 TOPOLOGY_TYPE = CFG_PARAM.get('topology', 'random')
 
+# Fetch simulation parameters
+PACKET_SIZE = int(CFG_PARAM.get("packet_size_bytes", 10))
+PACKET_LOSS = int(CFG_PARAM.get("packet_loss_percent", 0))
+FINITE_FIELD = CFG_PARAM.get("fifi", "binary")
+
+# Kodo configuration
+CFG_KODO = {
+    "n_coverage":NODE_COVERAGE,
+    "buf_size": NODE_BUFFER_SIZE,
+    "fifi": FINITE_FIELD,
+    "gen_size": NUM_OF_NODES,
+    "packet_size": PACKET_SIZE
+}
+
 # Fetch Logger related Configurations, or set default values.
 LOG_PATH = CFG_SIM.get('log_path', "")
 EXP_NAME = CFG_SIM.get('name', "test")
@@ -92,11 +106,11 @@ class NCSim:
         self.screen.visual_output_msg(
             f"Set {NUM_OF_NODES} nodes to {TOPOLOGY_TYPE} topology")
         trace.info(f"creating {NUM_OF_NODES} node(s)")
+
         # Loop over #no. of nodes to create its objects
         for index in range(NUM_OF_NODES):
             # Append the created node to list of nodes
-            self.nodes.append(Node(index, n_coverage=NODE_COVERAGE,
-                                   buf_size=NODE_BUFFER_SIZE))
+            self.nodes.append(Node(index, **CFG_KODO))
         # LOGGING:
         trace.info(f"setting topology to {TOPOLOGY_TYPE}")
         # Adjust Nodes Co-ordinates according to topology
@@ -298,8 +312,6 @@ class NCSim:
     # Simulation Sequence
     def run_generations(self):
         generations = int(CFG_PARAM.get("generations_num", '5'))
-        packet_size = int(CFG_PARAM.get("packet_size_bytes", 10))
-        packet_loss = int(CFG_PARAM.get("packet_loss_percent", 0))
         T_g = int(CFG_PARAM.get("generation_time_ms", '1000'))
         T_a = int(CFG_PARAM.get("action_time_ms", '40'))
         rounds = int(T_g/T_a)
@@ -321,7 +333,7 @@ class NCSim:
                     self.screen.screen_refresh()
                     time.sleep(SCREEN_REFRESH_TIME+0.5)
                     msg = "".join(np.random.choice(
-                        _alphabet_list, size=packet_size))
+                        _alphabet_list, size=PACKET_SIZE))
                     node.broadcast_message(msg, logger=kpi)
                     self.screen.clear_send_packets()
 
@@ -337,7 +349,7 @@ class NCSim:
 
                 # All receive in random order
                 for node in np.random.permutation(self.nodes):
-                    node.sense_spectrum(packet_loss, logger=kpi)
+                    node.sense_spectrum(PACKET_LOSS, logger=kpi)
                     node.rx_packet(kpi)
 
                 # TODO remove this delay
