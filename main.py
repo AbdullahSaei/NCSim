@@ -2,7 +2,7 @@ from ncsim import NCSim
 
 
 def main():
-    #Normal Scenario
+    # Normal Scenario
     # Create the simulation
     sim = NCSim()
 

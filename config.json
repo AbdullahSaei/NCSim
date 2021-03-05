@@ -18,17 +18,19 @@
     "button_height": 30
   },
   "Parameters": {
-    "nodes_num": 100,
+    "nodes_num": 20,
     "seed": 32,
-    "node_buffer_size": 2,
+    "node_buffer_size": 100,
     "generations_num": 1,
     "generation_time_ms": 1000,
-    "action_time_ms": 1000,
-    "topology": "grid",
+    "action_time_ms": 100,
+    "topology": "star",
     "min_dist_between_nodes": 50,
     "nodes_coverage": 100,
     "packet_size_bytes": 5,
     "fifi":"binary8",
-    "packet_loss_percent": 0
+    "packet_loss_percent": 0,
+    "channels": 50,
+    "timeslots": 40
   }
 }
