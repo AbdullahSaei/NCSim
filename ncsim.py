@@ -5,8 +5,8 @@ import ncsim_visualizer as ncsv
 import json
 import time
 import numpy as np
-import string
 import logging
+import cde
 
 try:
     # Open the NCSim Config Json file
@@ -50,15 +50,20 @@ TOPOLOGY_TYPE = CFG_PARAM.get('topology', 'random')
 # Fetch simulation parameters
 PACKET_SIZE = int(CFG_PARAM.get("packet_size_bytes", 10))
 PACKET_LOSS = int(CFG_PARAM.get("packet_loss_percent", 0))
+CHANNEL_NUM = int(CFG_PARAM.get("channels", 2))
+TIMESLOT_NUM = int(CFG_PARAM.get("timeslots", 2))
 FINITE_FIELD = CFG_PARAM.get("fifi", "binary")
 
 # Kodo configuration
 CFG_KODO = {
-    "n_coverage":NODE_COVERAGE,
+    "n_coverage": NODE_COVERAGE,
     "buf_size": NODE_BUFFER_SIZE,
     "fifi": FINITE_FIELD,
     "gen_size": NUM_OF_NODES,
-    "packet_size": PACKET_SIZE
+    "packet_size": PACKET_SIZE,
+    "channels": CHANNEL_NUM,
+    "timeslots": TIMESLOT_NUM,
+    "seed": SEED_VALUE
 }
 
 # Fetch Logger related Configurations, or set default values.
@@ -89,13 +94,15 @@ trace.setLevel(logging.DEBUG)
 kpi.addHandler(kpi_fh)
 kpi.setLevel(logging.DEBUG)
 
-
+print("outside class")
 class NCSim:
     def __init__(self):
         # Call to NCSimVisualizer create Screen
         self.screen = ncsv.NCSimVisualizer(CFG_OS)
         # Log operating system
         trace.info(f"running on {CFG_OS.lower()}")
+        # Create place holder of the data per gen
+        self.data_in = ""
         # Create List of Nodes Variable
         self.nodes = []
         # Call Nodes Init Method
@@ -217,7 +224,7 @@ class NCSim:
                 while (answer+1)**2 < limit:
                     answer += 1
                 return answer+1
-            
+
             # Set the Chain Length
             chain_v_length = SCREEN_HEIGHT - HEAD_MARGIN - MESSAGE_MARGIN
             chain_h_length = SCREEN_WIDTH - SCREEN_MARGIN * 2
@@ -226,7 +233,7 @@ class NCSim:
                 v_move = (chain_v_length/len(chains)) * index
                 # Adjust Cursor starting position
                 draw_cursor.setposition(-(chain_h_length/2 + SCREEN_MARGIN),
-                                        (chain_v_length/2) - v_move - MESSAGE_MARGIN )
+                                        (chain_v_length/2) - v_move - MESSAGE_MARGIN)
                 # Loop over the Nodes and Set Positions
                 for node in chain:
                     # Move Cursor forward by node spacing value
@@ -294,7 +301,7 @@ class NCSim:
             for neighbor in self.nodes:
                 if node.distance(neighbor) < node.coverage:
                     node.add_neighbor(neighbor)
-            time.sleep(0.1)
+            time.sleep(0.01)
             # Check if there was no neighbors
             if len(node.neighbors) == 0:
                 # LOGGING:
@@ -305,60 +312,91 @@ class NCSim:
                     f"node {node.node_id} has {len(node.neighbors)} neighbors")
             self.screen.hide_coverage()
 
-    # Analysis Sequence
-    def set_analysis(self):
-        self.screen.enable_btns()
+    def tx_phase(self, raw=False):
+        # All transmit in random order
+        for node in np.random.permutation(self.nodes):
+            self.screen.visual_send_packet(node, node.get_neighbors())
+            self.screen.screen_refresh()
+            time.sleep(SCREEN_REFRESH_TIME)
+
+            # broadcast the message
+            cde.node_broadcast(node, node.get_neighbors(), logger=kpi)
+            # node.broadcast_message(logger=kpi)
+            self.screen.clear_send_packets()
+
+    def rx_phase(self, raw=False):
+        # All receive in random order
+        for node in np.random.permutation(self.nodes):
+            node.sense_spectrum(PACKET_LOSS, logger=trace)
+            node.rx_packet(kpi)
+
+    def end_round(self):
+        # calculate data for the round
+        # [n.calculate_data(logger=kpi) for n in self.nodes]
+        print("end round")
+
+    def end_generation(self):
+        # calculate kpis for the generation
+        # and cleanup for new generation
+        # [n.calc_kpi(logger=kpi) for n in self.nodes]
+        print("end generation")
 
     # Simulation Sequence
+
     def run_generations(self):
         generations = int(CFG_PARAM.get("generations_num", '5'))
         T_g = int(CFG_PARAM.get("generation_time_ms", '1000'))
         T_a = int(CFG_PARAM.get("action_time_ms", '40'))
         rounds = int(T_g/T_a)
-        # for random message generation
-        _alphabet = string.ascii_uppercase + string.digits
-        _alphabet_list = [char for char in _alphabet]
         for g in range(1, generations+1):
             # LOGGING:
             trace.info(f"generation {g} begin")
             print("\n Generation {} \n".format(g))
+            # Generate new data
+            cde.generate_data()
+
+            # Starting from second round
             for r in range(1, rounds+1):
-                # LOGGING:
+                # TRANSMISSION PHASE
+                # logging:
                 log_msg = f"Generation {g}/{generations} round {r}/{rounds}, Transmitting phase"
                 self.screen.visual_output_msg(log_msg)
                 trace.info(log_msg)
-                # All transmit in random order
-                for node in np.random.permutation(self.nodes):
-                    self.screen.visual_send_packet(node, node.get_neighbors())
-                    self.screen.screen_refresh()
-                    time.sleep(SCREEN_REFRESH_TIME+0.5)
-                    msg = "".join(np.random.choice(
-                        _alphabet_list, size=PACKET_SIZE))
-                    node.broadcast_message(msg, logger=kpi)
-                    self.screen.clear_send_packets()
+                # Transmit
+                self.tx_phase()
 
                 # TODO remove this delay
                 time.sleep(0.1)
 
-                # LOGGING:
+                # Receiving PHASE
+                # logging:
                 log_msg = f"Generation {g}/{generations} round {r}/{rounds}, Receiving phase"
                 trace.info(log_msg)
                 # nothing to show when nodes are digesting the received messages
                 self.screen.visual_output_msg(log_msg)
                 self.screen.screen_refresh()
-
-                # All receive in random order
-                for node in np.random.permutation(self.nodes):
-                    node.sense_spectrum(PACKET_LOSS, logger=kpi)
-                    node.rx_packet(kpi)
+                # Receiving
+                self.rx_phase()
 
                 # TODO remove this delay
                 time.sleep(0.1)
+
+                # Collect data of the round
+                self.end_round()
+
+            self.end_generation()
 
         # LOGGING:
         self.screen.visual_output_msg("Generations run completed!")
         trace.info("run completed")
         print("run completed")
 
+    # Analysis Sequence
+    def set_analysis(self):
+        self.screen.enable_btns()
+
     def end_keep_open(self):
         self.screen.mainloop()
+
+if __name__ == "__main__":
+    print("Network Coding Simulator class")
