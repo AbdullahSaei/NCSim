@@ -96,7 +96,7 @@ def generate_data():
         decoder.consume_systematic_symbol(pack, i)
 
 
-def node_broadcast(node, neighbours, logger):
+def node_broadcast(node, neighbours, round, logger):
     # choose channel
     freq = np.random.choice([*range(node.ch_num)])
     time = np.random.choice([*range(node.ts_num)])
@@ -111,24 +111,25 @@ def node_broadcast(node, neighbours, logger):
     # log data
     # log message and channel
     logger.info(
-        "Node {:2},tx,broadcast_to {}".format(
-            i, len(neighbours)))
+        "Node {:2},tx{:2},broadcast_to {}".format(
+            i, round, len(neighbours)))
             
+    print("\nDecoder rank: {}/{}".format(decoder.rank(), symbols))
+    print(f"Node {i} sending to ", end='')
     for n in neighbours:
         # get kodo encoder and decoder of the neighbor
         n_i, n_encoder, n_decoder = nodes[n.node_id]
-        print(f"Node {i} sending to {n_i}")
-        n_decoder.consume_payload(pack)
+        print(f"{n_i:02} ", end='')
         n.access_rx_buffer(i, pack, node.sending_channel)
-        print("Decoder rank: {}/{}\n".format(decoder.rank(), symbols))
+    print("")
 
-def nodes_receive(node, neighbours, logger):
+def node_receive(node, packets, round, logger):
     i, encoder, decoder = nodes[node.node_id]
     # check if data in buffer
-    log_msg = "Node {:2},rx,".format(i)
-    if len(neighbours) > 0:
-        for n in neighbours:
-            n_i, n_encoder, n_decoder = nodes[n.node_id]
+    log_msg = "Node {:2},rx{:2},".format(i, round)
+    if len(packets) > 0:
+        for p in packets:
+            decoder.consume_payload(p)
         log_msg += "decoded/Missing/total {}/{}/{}".format(
         decoder.symbols_decoded(),
         decoder.symbols_missing(),
@@ -139,13 +140,13 @@ def nodes_receive(node, neighbours, logger):
         logger.warning(log_msg)
 
 
-def calculate_aod(logger):
+def calculate_aod(round, logger):
     for i, data in enumerate(data_out):
         d_i = [data[x:x+PACKET_SIZE] for x in range(0, len(data),PACKET_SIZE)]
         aod = [1 if din == dout else 0 for din, dout in zip(data_in, d_i)]
         s = "{} "* len(aod)
         logger.info(
-            ("Node {:2},kp,AoD {}/{} [" + s + "]").format(
-                i, sum(aod), len(aod), *aod
+            ("Node {:2},kp{:2},AoD {:2}/{} [" + s + "]").format(
+                i, round, sum(aod), len(aod), *aod
             )
         )

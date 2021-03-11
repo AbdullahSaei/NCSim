@@ -15,7 +15,6 @@ class Node(Turtle):
         self.neighbors = []
         self.avaliable_messages = []
         self.rx_buffer = []
-        self.collected_data = set()
         self.ch_num = int(kwargs.get("channels", 2))
         self.ts_num = int(kwargs.get("timeslots", 2))
         self.sending_channel = (0, 0)
@@ -63,9 +62,9 @@ class Node(Turtle):
             for i, m, src in self.avaliable_messages:
                 freq = all_srcs.count(src)
                 if freq == 1:
-                    unq_msgs.append([i, m, src])
+                    unq_msgs.append((i, m, src))
                 else:
-                    logger.info(
+                    logger.warning(
                         "node {:2} discard {} msgs collided at {}".format(
                             self.node_id, freq, src
                         )
@@ -75,7 +74,7 @@ class Node(Turtle):
             for i, channel_msg, ch_ts in unq_msgs:
                 # node cannot transmit and receive at the same time
                 if ch_ts[1] == self.sending_channel[1]:
-                    logger.info(
+                    logger.warning(
                         "node {:2} tx at {} discarded rx msg at {}".format(
                             self.node_id, self.sending_channel, ch_ts
                         )
@@ -87,7 +86,7 @@ class Node(Turtle):
                 if success:
                     rx_msg.append((i, channel_msg))
                 else:
-                    logger.info("node {:2} packet loss".format(self.node_id))
+                    logger.warning("node {:2} packet loss".format(self.node_id))
                     continue
 
             # log status of messages
@@ -96,12 +95,12 @@ class Node(Turtle):
                     "node {:2} no msgs survived".format(self.node_id))
             else:
                 logger.info(
-                    "node {:2} {:2} msgs to buffer {}".format(
+                    "node {:2} {:2} msgs to buffer size {}".format(
                         self.node_id, len(rx_msg), self.buffer_size
                     )
                 )
         else:
-            logger.warning("node {:2} No available msgs".format(self.node_id))
+            logger.critical("node {:2} No available msgs".format(self.node_id))
 
         # discard other available messages
         # for next round clean startup
@@ -116,13 +115,20 @@ class Node(Turtle):
     def access_rx_buffer(self, i, new_packet, on_channel):
         self.avaliable_messages.append((i, new_packet, on_channel))
 
-    def rx_packet(self, logger=None):
+    def get_rx_packets(self):
         if len(self.rx_buffer) > 0:
-            # decode or recode
-            for i, data in self.rx_buffer:
-                print(f"received from {i}")
+            packs = []
+            s = ""
+            for src, pack in self.rx_buffer: 
+                s += "{:2} ".format(src)
+                packs.append(pack)
+            
+            print("node {:2} received from ".format(self.node_id) + s)
+            return packs
         else:
-            print("no buffer")
+            print("node {:2} no buffer".format(self.node_id))
+            return None
+
 
     def set_data_packet(self, data):
         self.data_msg = data
@@ -140,7 +146,7 @@ class Node(Turtle):
 
         # log message and channel
         logger.info(
-            "Node {:2},tx,broadcast_to {}".format(
+            "Node {:2},tx,broadcast_to {} neighbors".format(
                 self.node_id, len(self.neighbors)
             )
         )
@@ -155,22 +161,7 @@ class Node(Turtle):
         # Send Packet, to current rx_node
         rx_node.access_rx_buffer(packet, self.sending_channel)
 
-    def calculate_data(self, logger=None):
-        self.collected_data.update(
-            [x[1].decode("utf-8", "backslashreplace") for x in self.rx_buffer]
-        )
+    def clear_rx_buffer(self):
         # Clear buffer
         self.rx_buffer = []
 
-    def calc_kpi(self, logger=None):
-        # msgs = sorted([m[3:5] for m in self.collected_data])
-        #msgs = ["X"] * len(self.collected_data)
-        #srcs = " ".join(msgs)
-        logger.info(
-            "Node {:2},kp,rank {:2}/{:2}".format(
-                self.node_id, self.decoder.rank(), self.decoder.symbols())
-        )
-        self.cleanup()
-
-    def cleanup(self):
-        self.collected_data.clear()

@@ -84,7 +84,7 @@ kpi_fh = logging.FileHandler(f'{LOG_PATH}/{EXP_NAME}_{EXP_ID}.csv', 'w+')
 # create a formatter and set the formatter for the handler.
 log_frmt = logging.Formatter('%(asctime)s: %(levelname)-8s: %(funcName)-16s: %(message)s',
                              datefmt="%Y-%m-%d %H.%M.%S")
-kpi_frmt = logging.Formatter('%(asctime)s,%(levelname)-8s,%(funcName)-17s,%(message)s',
+kpi_frmt = logging.Formatter('%(asctime)s,%(msecs)-3d,%(funcName)-17s,%(message)s',
                              datefmt="%Y-%m-%d %H:%M:%S")
 log_fh.setFormatter(log_frmt)
 kpi_fh.setFormatter(kpi_frmt)
@@ -95,7 +95,7 @@ trace.setLevel(logging.DEBUG)
 kpi.addHandler(kpi_fh)
 kpi.setLevel(logging.DEBUG)
 
-print("outside class")
+
 class NCSim:
     def __init__(self):
         # Call to NCSimVisualizer create Screen
@@ -112,10 +112,11 @@ class NCSim:
         # create right click listener
         self.mclick = MouseClick(self.screen.root, self.nodes)
         # attach popup to window
-        self.screen.set_click_listener(fun=self.mclick.left_click, btn=1, add=True)
+        self.screen.set_click_listener(
+            fun=self.mclick.left_click, btn=1, add=True)
         # attach left click
         self.screen.set_click_listener(fun=self.mclick.popup, btn=3, add=True)
-        
+
         print("init done")
 
     def create_nodes(self):
@@ -296,7 +297,7 @@ class NCSim:
                 node.coverage = node_position + 10
 
         else:
-            trace.warning("Invalid Topology input, using Random")
+            trace.error("Invalid Topology input, using Random")
             self.draw_network("grid")
 
     def discover_network(self):
@@ -315,7 +316,7 @@ class NCSim:
             # Check if there was no neighbors
             if len(node.neighbors) == 0:
                 # LOGGING:
-                trace.warning(f"node {node.node_id} has no neighbors")
+                trace.critical(f"node {node.node_id} has no neighbors")
             else:
                 # LOGGING:
                 trace.info(
@@ -324,8 +325,8 @@ class NCSim:
 
     def get_nodes_cor(self):
         return [n.pos() for n in self.nodes]
-    
-    def tx_phase(self, raw=False):
+
+    def tx_phase(self, r):
         # All transmit in random order
         for node in np.random.permutation(self.nodes):
             self.screen.visual_send_packet(node, node.get_neighbors())
@@ -333,26 +334,29 @@ class NCSim:
             time.sleep(SCREEN_REFRESH_TIME)
 
             # broadcast the message
-            cde.node_broadcast(node, node.get_neighbors(), logger=kpi)
+            cde.node_broadcast(node, node.get_neighbors(), r, logger=kpi)
             # node.broadcast_message(logger=kpi)
             self.screen.clear_send_packets()
 
-    def rx_phase(self, raw=False):
+    def rx_phase(self, r):
         # All receive in random order
         for node in np.random.permutation(self.nodes):
             node.sense_spectrum(PACKET_LOSS, logger=trace)
-            node.rx_packet(kpi)
+            packets = node.get_rx_packets()
+            if packets:
+                cde.node_receive(node, packets, r, logger=kpi)
+                
 
-    def end_round(self):
+    def end_round(self, round):
         # calculate data for the round
-        [n.calculate_data(logger=kpi) for n in self.nodes]
-        cde.calculate_aod(logger=kpi)
+        [n.clear_rx_buffer() for n in self.nodes]
+        cde.calculate_aod(round, logger=kpi)
         print("end round")
 
     def end_generation(self):
         # calculate kpis for the generation
         # and cleanup for new generation
-        # [n.calc_kpi(logger=kpi) for n in self.nodes]
+        
         print("end generation")
 
     # Simulation Sequence
@@ -377,7 +381,7 @@ class NCSim:
                 self.screen.visual_output_msg(log_msg)
                 trace.info(log_msg)
                 # Transmit
-                self.tx_phase()
+                self.tx_phase(r)
 
                 # TODO remove this delay
                 time.sleep(0.1)
@@ -390,13 +394,13 @@ class NCSim:
                 self.screen.visual_output_msg(log_msg)
                 self.screen.screen_refresh()
                 # Receiving
-                self.rx_phase()
+                self.rx_phase(r)
 
                 # TODO remove this delay
                 time.sleep(0.1)
 
                 # Collect data of the round
-                self.end_round()
+                self.end_round(r)
 
             self.end_generation()
 
@@ -411,6 +415,7 @@ class NCSim:
 
     def end_keep_open(self):
         self.screen.mainloop()
+
 
 if __name__ == "__main__":
     print("Network Coding Simulator class")
