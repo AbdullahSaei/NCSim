@@ -70,7 +70,7 @@ for i in range(NUM_OF_NODES):
     # init decoder
     decoder = kodo.RLNCDecoder(field, symbols, symbol_size)
     decoder.set_seed(SEED_VALUE)
-    decoder.set_log_callback(callback_function)
+    # decoder.set_log_callback(callback_function)
     nodes.append([i, encoder, decoder])
 
 
@@ -111,8 +111,8 @@ def node_broadcast(node, neighbours, logger):
     # log data
     # log message and channel
     logger.info(
-        "Node {:2},tx,msg {},broadcast_to {}".format(
-            i, pack, len(neighbours)))
+        "Node {:2},tx,broadcast_to {}".format(
+            i, len(neighbours)))
             
     for n in neighbours:
         # get kodo encoder and decoder of the neighbor
@@ -137,3 +137,15 @@ def nodes_receive(node, neighbours, logger):
     else:
         log_msg += "no buffered packets"
         logger.warning(log_msg)
+
+
+def calculate_aod(logger):
+    for i, data in enumerate(data_out):
+        d_i = [data[x:x+PACKET_SIZE] for x in range(0, len(data),PACKET_SIZE)]
+        aod = [1 if din == dout else 0 for din, dout in zip(data_in, d_i)]
+        s = "{} "* len(aod)
+        logger.info(
+            ("Node {:2},kp,AoD {}/{} [" + s + "]").format(
+                i, sum(aod), len(aod), *aod
+            )
+        )

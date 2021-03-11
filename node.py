@@ -9,6 +9,8 @@ class Node(Turtle):
         self.node_id = node_id
         self.coverage = int(kwargs.get("n_coverage", 100))
         self.node_color = "dark orange"
+                
+        # simulation configuration
         self.buffer_size = int(kwargs.get("buf_size", 100))
         self.neighbors = []
         self.avaliable_messages = []
@@ -70,7 +72,7 @@ class Node(Turtle):
                     )
 
             # There are non-collide messages in the channel
-            for _, channel_msg, ch_ts in unq_msgs:
+            for i, channel_msg, ch_ts in unq_msgs:
                 # node cannot transmit and receive at the same time
                 if ch_ts[1] == self.sending_channel[1]:
                     logger.info(
@@ -138,8 +140,8 @@ class Node(Turtle):
 
         # log message and channel
         logger.info(
-            "Node {:2},tx,msg {},broadcast_to {}".format(
-                self.node_id, packet, len(self.neighbors)
+            "Node {:2},tx,broadcast_to {}".format(
+                self.node_id, len(self.neighbors)
             )
         )
         # transmit to all nodes within the coverage
@@ -155,7 +157,7 @@ class Node(Turtle):
 
     def calculate_data(self, logger=None):
         self.collected_data.update(
-            [x.decode("utf-8", "backslashreplace") for x in self.rx_buffer]
+            [x[1].decode("utf-8", "backslashreplace") for x in self.rx_buffer]
         )
         # Clear buffer
         self.rx_buffer = []

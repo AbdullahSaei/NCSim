@@ -1,5 +1,6 @@
-from turtle import Screen, Turtle
+from turtle import Turtle
 from node import Node
+from mouseclick import MouseClick
 from platform import system as os_type
 import ncsim_visualizer as ncsv
 import json
@@ -107,6 +108,15 @@ class NCSim:
         self.nodes = []
         # Call Nodes Init Method
         self.create_nodes()
+
+        # create right click listener
+        self.mclick = MouseClick(self.screen.root, self.nodes)
+        # attach popup to window
+        self.screen.set_click_listener(fun=self.mclick.left_click, btn=1, add=True)
+        # attach left click
+        self.screen.set_click_listener(fun=self.mclick.popup, btn=3, add=True)
+        
+        print("init done")
 
     def create_nodes(self):
         # LOGGING:
@@ -312,6 +322,9 @@ class NCSim:
                     f"node {node.node_id} has {len(node.neighbors)} neighbors")
             self.screen.hide_coverage()
 
+    def get_nodes_cor(self):
+        return [n.pos() for n in self.nodes]
+    
     def tx_phase(self, raw=False):
         # All transmit in random order
         for node in np.random.permutation(self.nodes):
@@ -332,7 +345,8 @@ class NCSim:
 
     def end_round(self):
         # calculate data for the round
-        # [n.calculate_data(logger=kpi) for n in self.nodes]
+        [n.calculate_data(logger=kpi) for n in self.nodes]
+        cde.calculate_aod(logger=kpi)
         print("end round")
 
     def end_generation(self):

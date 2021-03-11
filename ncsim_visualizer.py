@@ -1,6 +1,6 @@
-from turtle import Screen, Turtle, onscreenclick, done, listen
+from turtle import Screen, Turtle, onscreenclick
 import tkinter as tk
-from tkinter import ttk 
+from tkinter import ttk
 import json
 
 try:
@@ -30,8 +30,8 @@ MESSAGE_MARGIN = int(CFG_SIM.get('message_margin', 100))
 SCREEN_BGCOLOR = CFG_SIM.get('screen_bgcolor', 'black')
 SCREEN_REFRESH_TIME = int(CFG_SIM.get("screen_refresh_time", 0.1))
 SCREEN_TITLE = CFG_SIM.get('screen_title', 'Network Coding Simulator')
-BUTTON_WIDTH = int(CFG_SIM.get('button_width', 120))        # Recommended Config
-BUTTON_HEIGHT = int(CFG_SIM.get('button_height', 30))       # Recommended Config
+BUTTON_WIDTH = int(CFG_SIM.get('button_width', 120))
+BUTTON_HEIGHT = int(CFG_SIM.get('button_height', 30))
 
 TOTAL_WIDTH = SCREEN_WIDTH + (2 * SCREEN_MARGIN)
 TOTAL_HEIGHT = SCREEN_HEIGHT + HEAD_MARGIN + SCREEN_MARGIN
@@ -70,7 +70,7 @@ class NCSimVisualizer:
         self.layout_cursor.pensize(3)
         self.layout_cursor.color("slate grey")
 
-        #Create Screen Message Cursor
+        # Create Screen Message Cursor
         self.msg_cursor = Turtle()
         self.msg_cursor.ht()
         self.msg_cursor.penup()
@@ -102,7 +102,9 @@ class NCSimVisualizer:
         self.screen.bgcolor(SCREEN_BGCOLOR)
 
         self.layout_cursor.color("slate grey")
-        self.layout_cursor.setposition(-((TOTAL_WIDTH / 2) - SCREEN_MARGIN), -((TOTAL_HEIGHT / 2) - SCREEN_MARGIN))
+        self.layout_cursor.setposition(
+            -((TOTAL_WIDTH / 2) - SCREEN_MARGIN),
+            -((TOTAL_HEIGHT / 2) - SCREEN_MARGIN))
 
         self.layout_cursor.speed(8)
         self.layout_cursor.pendown()
@@ -125,7 +127,8 @@ class NCSimVisualizer:
         x_cor = 0
         y_cor = int((TOTAL_HEIGHT / 2) - (3 / 4 * HEAD_MARGIN))
         self.layout_cursor.setposition(x_cor, y_cor)
-        self.layout_cursor.write(f"{SCREEN_HEADER}", align="Center", font=("Calibri", HEADER_FONT_SIZE, "bold"))
+        self.layout_cursor.write(f"{SCREEN_HEADER}", align="Center",
+                                font=("Calibri", HEADER_FONT_SIZE, "bold"))
 
         x_cor = 20 - (int(SCREEN_WIDTH / 2))
         y_cor = (int(TOTAL_HEIGHT / 2)) - (HEAD_MARGIN + 40)
@@ -149,7 +152,8 @@ class NCSimVisualizer:
         y_cor = (SCREEN_MARGIN + 15) - (int(TOTAL_HEIGHT / 2))
         self.msg_cursor.setposition(x_cor, y_cor)
         self.msg_cursor.clear()
-        self.msg_cursor.write(f"{message}", align="Left", font=("Calibri", TEXT_FONT_SIZE, "bold"))
+        self.msg_cursor.write(f"{message}", align="Left", 
+                            font=("Calibri", TEXT_FONT_SIZE, "bold"))
 
     def visual_send_packet(self, tx_node, rx_nodes):
         # draw arrow for all neighbors
@@ -191,7 +195,8 @@ class NCSimVisualizer:
         # When Pressed, Execute Below>> Below is a testing code to be edited"
         self.layout_cursor.color("black")
         self.layout_cursor.setposition(0, 0)
-        self.layout_cursor.write("TestString: Button Pressed!", align="Left", font=("Calibri", 12, "bold"))
+        self.layout_cursor.write("TestString: Button Pressed!", align="Left",
+                                 font=("Calibri", 12, "bold"))
 
     def enable_btns(self):
         self.btn_show_analysis['state'] = 'normal'
@@ -200,59 +205,28 @@ class NCSimVisualizer:
     def create_btns(self):
         self.style = ttk.Style()
         self.style.theme_use('alt')
-        self.style.configure('TButton', background = 'midnight blue', foreground = 'white', 
-                              font=("Calibri", 12, "bold"), borderwidth=1, focusthickness=3,
-                              focuscolor='none')
-        self.style.map('TButton', background=[('disabled','gray'), ('active','medium blue')])
+        self.style.configure('TButton', background='midnight blue', foreground='white',
+                             font=("Calibri", 12, "bold"), borderwidth=1, focusthickness=3,
+                             focuscolor='none')
+        self.style.map('TButton', background=[
+                       ('disabled', 'gray'), ('active', 'medium blue')])
 
-        self.btn_show_analysis = ttk.Button(self.root, text="Analyze Data", 
-                command = self.button_click)
+        self.btn_show_analysis = ttk.Button(self.root, text="Analyze Data",
+                                            command=self.button_click)
 
         # Locate Coordinates
         x_cor = TOTAL_WIDTH - SCREEN_MARGIN - BUTTON_WIDTH - 10
         y_cor = TOTAL_HEIGHT - SCREEN_MARGIN - BUTTON_HEIGHT - 20
 
-        self.btn_show_analysis.place(x=x_cor, y=y_cor, width=BUTTON_WIDTH, height=BUTTON_HEIGHT)
+        self.btn_show_analysis.place(
+            x=x_cor, y=y_cor, width=BUTTON_WIDTH, height=BUTTON_HEIGHT)
         self.btn_show_analysis['state'] = 'disabled'
-
-    def old_create_btns(self):
-        # Locate Coordinates
-        x_cor = (int(TOTAL_WIDTH / 2)) - SCREEN_MARGIN - BUTTON_WIDTH - 10
-        y_cor = 10 + SCREEN_MARGIN - (int(TOTAL_HEIGHT / 2))
-        self.layout_cursor.setposition(x_cor, y_cor)
-
-        # Draw the Button Square Shaped Filled with Blue Color
-        self.layout_cursor.pensize(2)
-        self.layout_cursor.color("black", "midnight blue")
-        self.layout_cursor.pendown()
-        self.layout_cursor.begin_fill()
-        self.layout_cursor.fd(BUTTON_WIDTH)
-        self.layout_cursor.left(90)
-        self.layout_cursor.fd(BUTTON_HEIGHT)
-        self.layout_cursor.left(90)
-        self.layout_cursor.fd(BUTTON_WIDTH)
-        self.layout_cursor.left(90)
-        self.layout_cursor.fd(BUTTON_HEIGHT)
-        self.layout_cursor.end_fill()
-        self.layout_cursor.penup()
-        self.layout_cursor.lt(90)
-        self.layout_cursor.fd(17)
-        self.layout_cursor.left(90)
-        self.layout_cursor.fd(7)
-        # Write Button String
-        self.layout_cursor.color("white")
-        self.layout_cursor.write("Analyze Data", align="Left", font=("Calibri", 12, "bold"))
-
-        # Allow Screen to Sense any Pressed Mouse Left-Clicks
-        onscreenclick(self.button_click)    # When Click self.button_click() Method will run
-        # Enable Screen to listen actions
-        listen()
-        # Hang the Display, in order not to close
-        done()
 
     def screen_refresh(self):
         self.screen.update()
 
+    def set_click_listener(self, **kwarg):
+        onscreenclick(**kwarg)
 
     def mainloop(self):
-        self.screen.exitonclick()
+        self.screen.mainloop()
