@@ -111,7 +111,7 @@ def node_broadcast(node, neighbours, round, logger):
     # log data
     # log message and channel
     logger.info(
-        "Node {:2},tx{:2},broadcast_to {}".format(
+        "node {:2},tx{:2},broadcast to {} nodes".format(
             i, round, len(neighbours)))
             
     print("\nDecoder rank: {}/{}".format(decoder.rank(), symbols))
@@ -126,7 +126,7 @@ def node_broadcast(node, neighbours, round, logger):
 def node_receive(node, packets, round, logger):
     i, encoder, decoder = nodes[node.node_id]
     # check if data in buffer
-    log_msg = "Node {:2},rx{:2},".format(i, round)
+    log_msg = "node {:2},rx{:2},".format(i, round)
     if len(packets) > 0:
         for p in packets:
             decoder.consume_payload(p)
@@ -146,7 +146,7 @@ def calculate_aod(round, logger):
         aod = [1 if din == dout else 0 for din, dout in zip(data_in, d_i)]
         s = "{} "* len(aod)
         logger.info(
-            ("Node {:2},kp{:2},AoD {:2}/{} [" + s + "]").format(
+            ("node {:2},kp{:2},AoD {:2}/{} [" + s + "]").format(
                 i, round, sum(aod), len(aod), *aod
             )
         )

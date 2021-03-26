@@ -133,27 +133,6 @@ class Node(Turtle):
     def set_data_packet(self, data):
         self.data_msg = data
 
-    def broadcast_message(self, ch_ts=None, logger=None):
-        # channel and timeslot
-        if ch_ts == None:
-            freq = np.random.choice([*range(self.ch_num)])
-            time = np.random.choice([*range(self.ts_num)])
-            self.sending_channel = (freq, time)
-        else:
-            self.sending_channel = ch_ts
-
-        packet = self.data_msg
-
-        # log message and channel
-        logger.info(
-            "Node {:2},tx,broadcast_to {} neighbors".format(
-                self.node_id, len(self.neighbors)
-            )
-        )
-        # transmit to all nodes within the coverage
-        for node in self.neighbors:
-            self.tx_packet(node, packet)
-
     def recode_packets(self):
         self.data_msg = self.decoder.produce_payload()
 

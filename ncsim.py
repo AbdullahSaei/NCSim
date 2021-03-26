@@ -78,20 +78,27 @@ trace = logging.getLogger('trace')
 kpi = logging.getLogger('kpi')
 
 # add a file handler
-log_fh = logging.FileHandler(f'{LOG_PATH}/{EXP_NAME}_{EXP_ID}.log', 'w+')
-kpi_fh = logging.FileHandler(f'{LOG_PATH}/{EXP_NAME}_{EXP_ID}.csv', 'w+')
+log_fh = logging.FileHandler(
+    f'{LOG_PATH}/{TOPOLOGY_TYPE}_{NUM_OF_NODES}_{EXP_NAME}_{EXP_ID}.log', 'w+')
+kpi_fh = logging.FileHandler(
+    f'{LOG_PATH}/{TOPOLOGY_TYPE}_{NUM_OF_NODES}_{EXP_NAME}_{EXP_ID}.csv', 'w+')
 
 # create a formatter and set the formatter for the handler.
-log_frmt = logging.Formatter('%(asctime)s: %(levelname)-8s: %(funcName)-16s: %(message)s',
+log_frmt = logging.Formatter('%(asctime)s:%(levelname)-9s: %(funcName)-16s: %(message)s',
                              datefmt="%Y-%m-%d %H.%M.%S")
 kpi_frmt = logging.Formatter('%(asctime)s,%(msecs)-3d,%(funcName)-17s,%(message)s',
                              datefmt="%Y-%m-%d %H:%M:%S")
 log_fh.setFormatter(log_frmt)
 kpi_fh.setFormatter(kpi_frmt)
 
+def fmt_filter(record):
+    record.levelname = '[%s]' % record.levelname
+    return True
+
 # add the Handler to the logger
 trace.addHandler(log_fh)
 trace.setLevel(logging.DEBUG)
+trace.addFilter(fmt_filter)
 kpi.addHandler(kpi_fh)
 kpi.setLevel(logging.DEBUG)
 
@@ -301,11 +308,12 @@ class NCSim:
             self.draw_network("grid")
 
     def discover_network(self):
+        kpi.info(f"nodes {NUM_OF_NODES},all,topology {TOPOLOGY_TYPE}")
         # Loop over all nodes
         self.screen.visual_output_msg(f"Nodes are discovering their neighbors")
         for node in self.nodes:
             # LOGGING:
-            trace.info(f"node {node.node_id} discovering its neighbors")
+            trace.info(f"node {node.node_id:2} discovering its neighbors")
             self.screen.show_coverage(node)
             self.screen.screen_refresh()
             # Scan all nodes within the coverage area
@@ -318,9 +326,12 @@ class NCSim:
                 # LOGGING:
                 trace.critical(f"node {node.node_id} has no neighbors")
             else:
+                msg = "node {:2},ini,{:2} neighbors".format(
+                        node.node_id, len(node.neighbors) 
+                )
                 # LOGGING:
-                trace.info(
-                    f"node {node.node_id} has {len(node.neighbors)} neighbors")
+                kpi.info(msg)
+                trace.info(msg.replace(",ini,"," has "))
             self.screen.hide_coverage()
 
     def get_nodes_cor(self):
@@ -335,7 +346,6 @@ class NCSim:
 
             # broadcast the message
             cde.node_broadcast(node, node.get_neighbors(), r, logger=kpi)
-            # node.broadcast_message(logger=kpi)
             self.screen.clear_send_packets()
 
     def rx_phase(self, r):
@@ -345,7 +355,6 @@ class NCSim:
             packets = node.get_rx_packets()
             if packets:
                 cde.node_receive(node, packets, r, logger=kpi)
-                
 
     def end_round(self, round):
         # calculate data for the round
@@ -356,7 +365,7 @@ class NCSim:
     def end_generation(self):
         # calculate kpis for the generation
         # and cleanup for new generation
-        
+
         print("end generation")
 
     # Simulation Sequence
