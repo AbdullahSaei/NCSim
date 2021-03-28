@@ -1,6 +1,6 @@
 from turtle import Turtle
 from node import Node
-from mouseclick import MouseClick
+from mouseclick import MouseClick, Controller
 from platform import system as os_type
 import ncsim_visualizer as ncsv
 import json
@@ -91,9 +91,11 @@ kpi_frmt = logging.Formatter('%(asctime)s,%(msecs)-3d,%(funcName)-17s,%(message)
 log_fh.setFormatter(log_frmt)
 kpi_fh.setFormatter(kpi_frmt)
 
+
 def fmt_filter(record):
     record.levelname = '[%s]' % record.levelname
     return True
+
 
 # add the Handler to the logger
 trace.addHandler(log_fh)
@@ -102,7 +104,14 @@ trace.addFilter(fmt_filter)
 kpi.addHandler(kpi_fh)
 kpi.setLevel(logging.DEBUG)
 
+# For Generations
+GENERATIONS = int(CFG_PARAM.get("generations_num", '5'))
+T_g = int(CFG_PARAM.get("generation_time_ms", '1000'))
+T_a = int(CFG_PARAM.get("action_time_ms", '40'))
+ROUNDS = int(T_g/T_a)
 
+# Pesudo random seed
+np.random.seed(SEED_VALUE)
 class NCSim:
     def __init__(self):
         # Call to NCSimVisualizer create Screen
@@ -123,6 +132,9 @@ class NCSim:
             fun=self.mclick.left_click, btn=1, add=True)
         # attach left click
         self.screen.set_click_listener(fun=self.mclick.popup, btn=3, add=True)
+
+        # Init controller window
+        self.ctrl = Controller(self.screen.root)
 
         print("init done")
 
@@ -184,8 +196,6 @@ class NCSim:
 
         # IF RANDOM TOPOLOGY
         elif topology == "random":
-            # Pesudo random seed
-            np.random.seed(SEED_VALUE)
             # Constants
             LOW_VALUE = 0
             HIGH_VALUE = 1
@@ -262,8 +272,6 @@ class NCSim:
 
         # IF STAR TOPOLOGY
         elif topology == "star":
-            # Pesudo random seed
-            np.random.seed(SEED_VALUE)
             # Node 0 is a central node reaching all other nodes
             self.nodes[0].place_node((0, 0))
             self.nodes[0].coverage = MAX_COVERAGE = SCREEN_HEIGHT / \
@@ -308,7 +316,7 @@ class NCSim:
             self.draw_network("grid")
 
     def discover_network(self):
-        kpi.info(f"nodes {NUM_OF_NODES},all,topology {TOPOLOGY_TYPE}")
+        kpi.info(f"totn {NUM_OF_NODES},all,topology {TOPOLOGY_TYPE}")
         # Loop over all nodes
         self.screen.visual_output_msg(f"Nodes are discovering their neighbors")
         for node in self.nodes:
@@ -327,11 +335,11 @@ class NCSim:
                 trace.critical(f"node {node.node_id} has no neighbors")
             else:
                 msg = "node {:2},ini,{:2} neighbors".format(
-                        node.node_id, len(node.neighbors) 
+                    node.node_id, len(node.neighbors)
                 )
                 # LOGGING:
                 kpi.info(msg)
-                trace.info(msg.replace(",ini,"," has "))
+                trace.info(msg.replace(",ini,", " has "))
             self.screen.hide_coverage()
 
     def get_nodes_cor(self):
@@ -356,66 +364,95 @@ class NCSim:
             if packets:
                 cde.node_receive(node, packets, r, logger=kpi)
 
+    def run_round(self, g, r):
+        # wait between generations
+        while self.ctrl.is_continuous_run() > 1:
+            self.screen.root.update()
+            self.screen.root.update_idletasks()
+            if self.ctrl.is_nxt_clicked():
+                self.ctrl.post_click()
+                break
+        # TRANSMISSION PHASE
+        # logging:
+        log_msg = f"Generation {g}/{GENERATIONS} round {r}/{ROUNDS}, Transmitting phase"
+        self.screen.visual_output_msg(log_msg)
+        trace.info(log_msg)
+        # Transmit
+        self.tx_phase(r)
+
+        # TODO remove this delay
+        time.sleep(0.1)
+
+        # Receiving PHASE
+        # logging:
+        log_msg = f"Generation {g}/{GENERATIONS} round {r}/{ROUNDS}, Receiving phase"
+        trace.info(log_msg)
+        # nothing to show when nodes are digesting the received messages
+        self.screen.visual_output_msg(log_msg)
+        self.screen.screen_refresh()
+        # Receiving
+        self.rx_phase(r)
+
+        # TODO remove this delay
+        time.sleep(0.1)
+
+        # Collect data of the round
+        self.end_round(r)
+
+    def run_gen(self, g):
+
+        # wait between generations
+        while self.ctrl.is_continuous_run() > 0:
+            self.screen.root.update()
+            self.screen.root.update_idletasks()
+            if self.ctrl.is_nxt_clicked():
+                self.ctrl.post_click()
+                # enable if was disabled
+                self.ctrl.enb_rnd()
+                break
+
+        # LOGGING:
+        trace.info(f"generation {g} begin")
+        print("\n Generation {} \n".format(g))
+        # Generate new data
+        cde.generate_data()
+
+        # Starting from second round
+        for r in range(1, ROUNDS+1):
+            self.run_round(g, r)
+        self.end_generation()
+
     def end_round(self, round):
         # calculate data for the round
-        [n.clear_rx_buffer() for n in self.nodes]
-        cde.calculate_aod(round, logger=kpi)
+        aods = cde.calculate_aod(round, logger=kpi)
+        [n.print_aod_percentage(aods[i]) for i, n in enumerate(self.nodes)]
         print("end round")
 
     def end_generation(self):
         # calculate kpis for the generation
+        aods = cde.calculate_aod(logger=kpi)
+        [n.print_aod_percentage(aods[i]) for i, n in enumerate(self.nodes)]
+        
         # and cleanup for new generation
+        cde.clean_up_all()
 
+        if self.ctrl.is_continuous_run() > 1:
+            self.ctrl.enable_nxt_btn('gen')
+            self.ctrl.cont_run.set(1)
+            self.ctrl.dis_rnd()
         print("end generation")
 
     # Simulation Sequence
-
     def run_generations(self):
-        generations = int(CFG_PARAM.get("generations_num", '5'))
-        T_g = int(CFG_PARAM.get("generation_time_ms", '1000'))
-        T_a = int(CFG_PARAM.get("action_time_ms", '40'))
-        rounds = int(T_g/T_a)
-        for g in range(1, generations+1):
-            # LOGGING:
-            trace.info(f"generation {g} begin")
-            print("\n Generation {} \n".format(g))
-            # Generate new data
-            cde.generate_data()
-
-            # Starting from second round
-            for r in range(1, rounds+1):
-                # TRANSMISSION PHASE
-                # logging:
-                log_msg = f"Generation {g}/{generations} round {r}/{rounds}, Transmitting phase"
-                self.screen.visual_output_msg(log_msg)
-                trace.info(log_msg)
-                # Transmit
-                self.tx_phase(r)
-
-                # TODO remove this delay
-                time.sleep(0.1)
-
-                # Receiving PHASE
-                # logging:
-                log_msg = f"Generation {g}/{generations} round {r}/{rounds}, Receiving phase"
-                trace.info(log_msg)
-                # nothing to show when nodes are digesting the received messages
-                self.screen.visual_output_msg(log_msg)
-                self.screen.screen_refresh()
-                # Receiving
-                self.rx_phase(r)
-
-                # TODO remove this delay
-                time.sleep(0.1)
-
-                # Collect data of the round
-                self.end_round(r)
-
-            self.end_generation()
+        for g in range(1, GENERATIONS+1):
+                self.run_gen(g)
 
         # LOGGING:
-        self.screen.visual_output_msg("Generations run completed!")
+        self.screen.visual_output_msg(
+            f"Completed generations {GENERATIONS} x {ROUNDS} rounds")
         trace.info("run completed")
+        self.ctrl.dis_btns(dis_all=True)
+        self.ctrl.enable_extra_runs()
         print("run completed")
 
     # Analysis Sequence

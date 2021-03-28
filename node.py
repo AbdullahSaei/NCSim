@@ -31,8 +31,11 @@ class Node(Turtle):
             self.fd(position)
         else:
             self.goto(position)
-        self.write(f"{self.node_id}  ", align="Right",
+        self.write(f"{self.node_id}  ", align="right",
                    font=("Calibri", 12, "bold"))
+        # Print AoD
+        self.write(f"  0%", align="left",
+                   font=("sans", 12))
 
     def add_neighbor(self, new_neighbor):
         # To exclude duplications and adding self node to neighbors
@@ -65,8 +68,8 @@ class Node(Turtle):
                     unq_msgs.append((i, m, src))
                 else:
                     logger.warning(
-                        "node {:2} discard {} msgs collided at {}".format(
-                            self.node_id, freq, src
+                        "node {:2} collision @ {} discard msg".format(
+                            self.node_id, src
                         )
                     )
 
@@ -75,7 +78,7 @@ class Node(Turtle):
                 # node cannot transmit and receive at the same time
                 if ch_ts[1] == self.sending_channel[1]:
                     logger.warning(
-                        "node {:2} tx at {} discarded rx msg at {}".format(
+                        "node {:2} tx on {} discard rx msg on {}".format(
                             self.node_id, self.sending_channel, ch_ts
                         )
                     )
@@ -128,7 +131,12 @@ class Node(Turtle):
         else:
             print("node {:2} no buffer".format(self.node_id))
             return None
-
+    
+    def print_aod_percentage(self, aod):
+        self.undo()
+        self.write(f"  {aod:3.0f}%", align="left",
+                   font=("sans", 12))
+        self.clear_rx_buffer()
 
     def set_data_packet(self, data):
         self.data_msg = data

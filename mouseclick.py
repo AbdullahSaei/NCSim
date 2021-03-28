@@ -149,3 +149,98 @@ class MouseClick:
         y_root = self.root.winfo_pointery()
         if self.get_node((x, y)):
             self.focus_node = self.get_node((x, y))
+
+
+class Controller:
+    def __init__(self, master):
+        self.root = master
+        self.ctrlr = tk.Toplevel(self.root)
+        self.ctrlr.wm_title("Controller")
+        self.cont_run = tk.IntVar()
+        self.R1 = tk.Radiobutton(self.ctrlr, text="Run all",
+                                 variable=self.cont_run, value=0,
+                                 command=self.dis_btns)
+        self.R1.pack(anchor=tk.W)
+
+        self.R2 = tk.Radiobutton(self.ctrlr, text="Stop @ generations",
+                                 variable=self.cont_run, value=1,
+                                 command=lambda: self.enable_nxt_btn('gen'))
+        self.R2.pack(anchor=tk.W)
+
+        self.R3 = tk.Radiobutton(self.ctrlr, text="Stop @ rounds",
+                                 variable=self.cont_run, value=2,
+                                 command=lambda: self.enable_nxt_btn('rnd'))
+        self.R3.pack(anchor=tk.W)
+
+        self.is_nxt = tk.BooleanVar(value=False)
+        self.btn_nxt_gen = tk.Button(
+            self.ctrlr, text="Next generation", width=15,
+            command=self.nxt_clicked)
+        self.btn_nxt_gen['state'] = 'disabled'
+        self.btn_nxt_gen.pack()
+
+        self.btn_nxt_rnd = tk.Button(
+            self.ctrlr, text="Next round", width=15,
+            command=self.nxt_clicked)
+        self.btn_nxt_rnd['state'] = 'disabled'
+        self.btn_nxt_rnd.pack()
+
+        self.btn_xtr_gen = tk.Button(
+            self.ctrlr, text="Extra generation", width=15,
+            command=self.xtr_click)
+        self.btn_xtr_gen['state'] = 'disabled'
+        self.btn_xtr_gen.pack()
+
+        self.btn_xtr_rnd = tk.Button(
+            self.ctrlr, text="Extra round",  width=15,
+            command=self.xtr_click)
+        self.btn_xtr_rnd['state'] = 'disabled'
+        self.btn_xtr_rnd.pack()
+
+        btn_ext = tk.Button(self.ctrlr, text="Exit app", width=15,
+                            command=self.root.destroy)
+        btn_ext.pack()
+
+    def dis_btns(self, dis_all=False):
+        self.btn_nxt_gen['state'] = 'disabled'
+        self.btn_nxt_rnd['state'] = 'disabled'
+        if dis_all:
+            self.R1.configure(state=tk.DISABLED)
+            self.R2.configure(state=tk.DISABLED)
+            self.R3.configure(state=tk.DISABLED)
+    
+    def dis_rnd(self):
+        self.R3.configure(state=tk.DISABLED)
+    
+    def enb_rnd(self):
+        self.R3.configure(state=tk.NORMAL)
+    
+    def enable_nxt_btn(self, btn):
+        if btn == "gen":
+            self.btn_nxt_gen['state'] = 'normal'
+            self.btn_nxt_rnd['state'] = 'disabled'
+        else:
+            self.btn_nxt_gen['state'] = 'disabled'
+            self.btn_nxt_rnd['state'] = 'normal'
+
+    def is_continuous_run(self):
+        return self.cont_run.get()
+
+    def nxt_clicked(self):
+        self.is_nxt.set(True)
+
+    def is_nxt_clicked(self):
+        return self.is_nxt.get()
+
+    def post_click(self):
+        self.is_nxt.set(False)
+
+    def enable_extra_runs(self):
+        self.btn_xtr_gen['state'] = 'normal'
+        self.btn_xtr_rnd['state'] = 'normal'
+
+    def xtr_click(self, func, g, r=None):
+        if r:
+            func(g, r)
+        else:
+            func(g)

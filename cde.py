@@ -32,7 +32,7 @@ SEED_VALUE = int(CFG_PARAM.get('seed', 0))
 # symbols or generation size
 NUM_OF_NODES = int(CFG_PARAM.get("nodes_num", '10'))
 # symbol size or packet size per node
-PACKET_SIZE = int(CFG_PARAM.get("packet_size_bytes", 10)) + 6
+PACKET_SIZE = int(CFG_PARAM.get("packet_size_bytes", 10))
 # how many bits identifying each node
 FINITE_FIELD = CFG_PARAM.get("fifi", "binary")
 
@@ -49,6 +49,10 @@ field = fifi.get(FINITE_FIELD, "binary")
 symbols = NUM_OF_NODES
 symbol_size = PACKET_SIZE
 
+
+# Pesudo random seed
+np.random.seed(SEED_VALUE)
+
 # We want to follow the decoding process step-by-step
 
 
@@ -58,23 +62,35 @@ def callback_function(zone, message):
         print(message)
 
 
-# Create list of encoder and decoder triples
+# Global scope Create list of encoder and decoder triples
 nodes = []
 data_in = []
 data_out = []
-for i in range(NUM_OF_NODES):
-    # init encoder
-    encoder = kodo.RLNCEncoder(field, symbols, symbol_size)
-    encoder.set_seed(SEED_VALUE)
 
-    # init decoder
-    decoder = kodo.RLNCDecoder(field, symbols, symbol_size)
-    decoder.set_seed(SEED_VALUE)
-    # decoder.set_log_callback(callback_function)
-    nodes.append([i, encoder, decoder])
+def kodo_init():# Create list of encoder and decoder triples
+    global nodes
+    global data_in
+    global data_out
+    nodes = []
+    data_in = []
+    data_out = []
+    for i in range(NUM_OF_NODES):
+        # init encoder
+        encoder = kodo.RLNCEncoder(field, symbols, symbol_size)
+        seed = np.random.randint(SEED_VALUE)
+        encoder.set_seed(seed)
+
+        # init decoder
+        decoder = kodo.RLNCDecoder(field, symbols, symbol_size)
+        decoder.set_seed(seed)
+        # decoder.set_log_callback(callback_function)
+        nodes.append([i, encoder, decoder])
 
 
 def generate_data():
+    if not nodes:
+        kodo_init()
+
     # for random message generation
     _alphabet = string.ascii_uppercase + string.digits
     _alphabet_list = [char for char in _alphabet]
@@ -113,7 +129,7 @@ def node_broadcast(node, neighbours, round, logger):
     logger.info(
         "node {:2},tx{:2},broadcast to {} nodes".format(
             i, round, len(neighbours)))
-            
+
     print("\nDecoder rank: {}/{}".format(decoder.rank(), symbols))
     print(f"Node {i} sending to ", end='')
     for n in neighbours:
@@ -123,6 +139,7 @@ def node_broadcast(node, neighbours, round, logger):
         n.access_rx_buffer(i, pack, node.sending_channel)
     print("")
 
+
 def node_receive(node, packets, round, logger):
     i, encoder, decoder = nodes[node.node_id]
     # check if data in buffer
@@ -130,23 +147,31 @@ def node_receive(node, packets, round, logger):
     if len(packets) > 0:
         for p in packets:
             decoder.consume_payload(p)
-        log_msg += "decoded/Missing/total {}/{}/{}".format(
-        decoder.symbols_decoded(),
-        decoder.symbols_missing(),
-        decoder.symbols())
+        log_msg += "part/decoded/missing/total {}/{}/{}/{}".format(
+            decoder.symbols_partially_decoded(),
+            decoder.symbols_decoded(),
+            decoder.symbols_missing(),
+            decoder.symbols())
         logger.info(log_msg)
     else:
         log_msg += "no buffered packets"
         logger.warning(log_msg)
 
 
-def calculate_aod(round, logger):
+def calculate_aod(round="i", logger=None):
+    aods = []
     for i, data in enumerate(data_out):
-        d_i = [data[x:x+PACKET_SIZE] for x in range(0, len(data),PACKET_SIZE)]
+        d_i = [data[x:x+PACKET_SIZE] for x in range(0, len(data), PACKET_SIZE)]
         aod = [1 if din == dout else 0 for din, dout in zip(data_in, d_i)]
-        s = "{} "* len(aod)
-        logger.info(
-            ("node {:2},kp{:2},AoD {:2}/{} [" + s + "]").format(
-                i, round, sum(aod), len(aod), *aod
+        s = "{} " * len(aod)
+        if logger:
+            logger.info(
+                ("node {:2},kp{:2},AoD {:2}/{} [" + s + "]").format(
+                    i, round, sum(aod), len(aod), *aod)
             )
-        )
+        aods.append(sum(aod)/len(aod) * 100)
+    return aods
+
+
+def clean_up_all():
+    kodo_init()

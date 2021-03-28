@@ -54,6 +54,7 @@ class NCSimVisualizer:
         # Use the same Tk root with turtle:
         assert isinstance(self.screen._root, tk.Tk)  # True
         self.root = self.screen._root
+        self.root.title("Network Coding Simulator")
 
         if CFG_OS.lower() == "linux":
             self.root.iconbitmap(LOGO_LINUX_PATH)
@@ -191,12 +192,12 @@ class NCSimVisualizer:
 
     def button_click(self):
         print("Button pressed")
-
-        # When Pressed, Execute Below>> Below is a testing code to be edited"
-        self.layout_cursor.color("black")
-        self.layout_cursor.setposition(0, 0)
-        self.layout_cursor.write("TestString: Button Pressed!", align="Left",
-                                 font=("Calibri", 12, "bold"))
+        if False:
+            # When Pressed, Execute Below>> Below is a testing code to be edited"
+            self.layout_cursor.color("black")
+            self.layout_cursor.setposition(0, 0)
+            self.layout_cursor.write("TestString: Button Pressed!", align="Left",
+                                    font=("Calibri", 12, "bold"))
 
     def enable_btns(self):
         self.btn_show_analysis['state'] = 'normal'
@@ -216,7 +217,7 @@ class NCSimVisualizer:
 
         # Locate Coordinates
         x_cor = TOTAL_WIDTH - SCREEN_MARGIN - BUTTON_WIDTH - 10
-        y_cor = TOTAL_HEIGHT - SCREEN_MARGIN - BUTTON_HEIGHT - 20
+        y_cor = TOTAL_HEIGHT - SCREEN_MARGIN - BUTTON_HEIGHT - 21
 
         self.btn_show_analysis.place(
             x=x_cor, y=y_cor, width=BUTTON_WIDTH, height=BUTTON_HEIGHT)
