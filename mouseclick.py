@@ -154,7 +154,7 @@ class MouseClick:
 class Controller:
     def __init__(self, master):
         self.root = master
-        self.ctrlr = tk.Toplevel(self.root)
+        self.ctrlr = tk.Toplevel(self.root, padx=10, pady=10)
         self.ctrlr.wm_title("Controller")
         self.cont_run = tk.IntVar()
         self.R1 = tk.Radiobutton(self.ctrlr, text="Run all",
@@ -186,14 +186,12 @@ class Controller:
         self.btn_nxt_rnd.pack()
 
         self.btn_xtr_gen = tk.Button(
-            self.ctrlr, text="Extra generation", width=15,
-            command=self.xtr_click)
+            self.ctrlr, text="Extra generation", width=15)
         self.btn_xtr_gen['state'] = 'disabled'
         self.btn_xtr_gen.pack()
 
         self.btn_xtr_rnd = tk.Button(
-            self.ctrlr, text="Extra round",  width=15,
-            command=self.xtr_click)
+            self.ctrlr, text="Extra round",  width=15)
         self.btn_xtr_rnd['state'] = 'disabled'
         self.btn_xtr_rnd.pack()
 
@@ -235,12 +233,5 @@ class Controller:
     def post_click(self):
         self.is_nxt.set(False)
 
-    def enable_extra_runs(self):
-        self.btn_xtr_gen['state'] = 'normal'
-        self.btn_xtr_rnd['state'] = 'normal'
-
-    def xtr_click(self, func, g, r=None):
-        if r:
-            func(g, r)
-        else:
-            func(g)
+    def get_xtr_btns(self):
+        return [self.btn_xtr_gen, self.btn_xtr_rnd]

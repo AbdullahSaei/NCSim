@@ -84,7 +84,7 @@ kpi_fh = logging.FileHandler(
     f'{LOG_PATH}/{TOPOLOGY_TYPE}_{NUM_OF_NODES}_{EXP_NAME}_{EXP_ID}.csv', 'w+')
 
 # create a formatter and set the formatter for the handler.
-log_frmt = logging.Formatter('%(asctime)s:%(levelname)-9s: %(funcName)-16s: %(message)s',
+log_frmt = logging.Formatter('%(asctime)s:%(levelname)-10s: %(funcName)-16s: %(message)s',
                              datefmt="%Y-%m-%d %H.%M.%S")
 kpi_frmt = logging.Formatter('%(asctime)s,%(msecs)-3d,%(funcName)-17s,%(message)s',
                              datefmt="%Y-%m-%d %H:%M:%S")
@@ -109,9 +109,12 @@ GENERATIONS = int(CFG_PARAM.get("generations_num", '5'))
 T_g = int(CFG_PARAM.get("generation_time_ms", '1000'))
 T_a = int(CFG_PARAM.get("action_time_ms", '40'))
 ROUNDS = int(T_g/T_a)
+EXTRA_RNDS = 0
 
 # Pesudo random seed
 np.random.seed(SEED_VALUE)
+
+
 class NCSim:
     def __init__(self):
         # Call to NCSimVisualizer create Screen
@@ -316,7 +319,7 @@ class NCSim:
             self.draw_network("grid")
 
     def discover_network(self):
-        kpi.info(f"totn {NUM_OF_NODES},all,topology {TOPOLOGY_TYPE}")
+        kpi.info(f"totn {NUM_OF_NODES},alln,topology {TOPOLOGY_TYPE}")
         # Loop over all nodes
         self.screen.visual_output_msg(f"Nodes are discovering their neighbors")
         for node in self.nodes:
@@ -334,12 +337,12 @@ class NCSim:
                 # LOGGING:
                 trace.critical(f"node {node.node_id} has no neighbors")
             else:
-                msg = "node {:2},ini,{:2} neighbors".format(
+                msg = "node {:2},init,{:2} neighbors".format(
                     node.node_id, len(node.neighbors)
                 )
                 # LOGGING:
                 kpi.info(msg)
-                trace.info(msg.replace(",ini,", " has "))
+                trace.info(msg.replace(",init,", " has "))
             self.screen.hide_coverage()
 
     def get_nodes_cor(self):
@@ -414,6 +417,8 @@ class NCSim:
         # LOGGING:
         trace.info(f"generation {g} begin")
         print("\n Generation {} \n".format(g))
+        # clean up before new generation
+        cde.clean_up_all()
         # Generate new data
         cde.generate_data()
 
@@ -432,9 +437,6 @@ class NCSim:
         # calculate kpis for the generation
         aods = cde.calculate_aod(logger=kpi)
         [n.print_aod_percentage(aods[i]) for i, n in enumerate(self.nodes)]
-        
-        # and cleanup for new generation
-        cde.clean_up_all()
 
         if self.ctrl.is_continuous_run() > 1:
             self.ctrl.enable_nxt_btn('gen')
@@ -445,15 +447,36 @@ class NCSim:
     # Simulation Sequence
     def run_generations(self):
         for g in range(1, GENERATIONS+1):
-                self.run_gen(g)
+            self.run_gen(g)
 
         # LOGGING:
         self.screen.visual_output_msg(
             f"Completed generations {GENERATIONS} x {ROUNDS} rounds")
         trace.info("run completed")
         self.ctrl.dis_btns(dis_all=True)
-        self.ctrl.enable_extra_runs()
+        self.enable_extra_runs()
         print("run completed")
+
+    # for extra runs
+    def enable_extra_runs(self):
+        btn_xtr_gen, btn_xtr_rnd = self.ctrl.get_xtr_btns()
+        btn_xtr_gen['state'] = 'normal'
+        btn_xtr_rnd['state'] = 'normal'
+
+        btn_xtr_gen['command'] = self.extra_gen
+        btn_xtr_rnd['command'] = self.extra_rnd
+
+    def extra_gen(self):
+        global GENERATIONS
+        global EXTRA_RNDS
+        GENERATIONS = GENERATIONS + 1
+        EXTRA_RNDS = 0
+        self.run_gen(GENERATIONS)
+
+    def extra_rnd(self):
+        global EXTRA_RNDS
+        EXTRA_RNDS = EXTRA_RNDS + 1
+        self.run_round(GENERATIONS, ROUNDS + EXTRA_RNDS)
 
     # Analysis Sequence
     def set_analysis(self):

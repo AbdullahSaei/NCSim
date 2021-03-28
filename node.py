@@ -93,8 +93,8 @@ class Node(Turtle):
                     continue
 
             # log status of messages
-            if len(rx_msg) < 0:
-                logger.warning(
+            if len(rx_msg) <= 0:
+                logger.critical(
                     "node {:2} no msgs survived".format(self.node_id))
             else:
                 logger.info(
