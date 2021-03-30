@@ -18,6 +18,7 @@ class Node(Turtle):
         self.ch_num = int(kwargs.get("channels", 2))
         self.ts_num = int(kwargs.get("timeslots", 2))
         self.sending_channel = (0, 0)
+        self.aod = 0
 
     def place_node(self, position, only_fd=None):
         self.shape("circle")
@@ -133,6 +134,7 @@ class Node(Turtle):
             return None
     
     def print_aod_percentage(self, aod):
+        self.aod = aod
         self.undo()
         self.write(f"  {aod:3.0f}%", align="left",
                    font=("sans", 12))

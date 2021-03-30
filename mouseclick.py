@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 from turtle import Turtle
 
 
@@ -157,20 +158,22 @@ class Controller:
         self.ctrlr = tk.Toplevel(self.root, padx=10, pady=10)
         self.ctrlr.wm_title("Controller")
         self.cont_run = tk.IntVar()
-        self.R1 = tk.Radiobutton(self.ctrlr, text="Run all",
+        lf = ttk.Labelframe(self.ctrlr, text='methods')
+        self.R1 = tk.Radiobutton(lf, text="Run all",
                                  variable=self.cont_run, value=0,
                                  command=self.dis_btns)
         self.R1.pack(anchor=tk.W)
 
-        self.R2 = tk.Radiobutton(self.ctrlr, text="Stop @ generations",
+        self.R2 = tk.Radiobutton(lf, text="Stop @ generations",
                                  variable=self.cont_run, value=1,
                                  command=lambda: self.enable_nxt_btn('gen'))
         self.R2.pack(anchor=tk.W)
 
-        self.R3 = tk.Radiobutton(self.ctrlr, text="Stop @ rounds",
+        self.R3 = tk.Radiobutton(lf, text="Stop @ rounds",
                                  variable=self.cont_run, value=2,
                                  command=lambda: self.enable_nxt_btn('rnd'))
         self.R3.pack(anchor=tk.W)
+        lf.pack(side='top', pady=10)
 
         self.is_nxt = tk.BooleanVar(value=False)
         self.btn_nxt_gen = tk.Button(
@@ -185,6 +188,8 @@ class Controller:
         self.btn_nxt_rnd['state'] = 'disabled'
         self.btn_nxt_rnd.pack()
 
+        ttk.Separator(self.ctrlr, orient='horizontal').pack(side='top', fill='x', pady=10)
+
         self.btn_xtr_gen = tk.Button(
             self.ctrlr, text="Extra generation", width=15)
         self.btn_xtr_gen['state'] = 'disabled'
@@ -194,6 +199,13 @@ class Controller:
             self.ctrlr, text="Extra round",  width=15)
         self.btn_xtr_rnd['state'] = 'disabled'
         self.btn_xtr_rnd.pack()
+
+        ttk.Separator(self.ctrlr,orient='horizontal').pack(side='top', fill='x', pady=10)
+        
+        self.btn_to_full = tk.Button(
+            self.ctrlr, text="Full AoD",  width=15)
+        self.btn_to_full['state'] = 'disabled'
+        self.btn_to_full.pack()
 
         btn_ext = tk.Button(self.ctrlr, text="Exit app", width=15,
                             command=self.root.destroy)
@@ -234,4 +246,4 @@ class Controller:
         self.is_nxt.set(False)
 
     def get_xtr_btns(self):
-        return [self.btn_xtr_gen, self.btn_xtr_rnd]
+        return [self.btn_xtr_gen, self.btn_xtr_rnd, self.btn_to_full]

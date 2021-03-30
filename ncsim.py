@@ -434,9 +434,12 @@ class NCSim:
         print("end round")
 
     def end_generation(self):
-        # calculate kpis for the generation
-        aods = cde.calculate_aod(logger=kpi)
-        [n.print_aod_percentage(aods[i]) for i, n in enumerate(self.nodes)]
+        # Calculate nodes with 100% AoD
+        self.full_AoD = [1 if n.aod == 100 else 0 for _, n in enumerate(self.nodes)]
+        kpi.info("totn {},al{},AoD {:2}/{} has 100%".format(
+                NUM_OF_NODES, 
+                ROUNDS + EXTRA_RNDS,
+                sum(self.full_AoD),len(self.full_AoD)))
 
         if self.ctrl.is_continuous_run() > 1:
             self.ctrl.enable_nxt_btn('gen')
@@ -459,12 +462,14 @@ class NCSim:
 
     # for extra runs
     def enable_extra_runs(self):
-        btn_xtr_gen, btn_xtr_rnd = self.ctrl.get_xtr_btns()
+        btn_xtr_gen, btn_xtr_rnd, btn_to_full = self.ctrl.get_xtr_btns()
         btn_xtr_gen['state'] = 'normal'
         btn_xtr_rnd['state'] = 'normal'
+        btn_to_full['state'] = 'normal'
 
         btn_xtr_gen['command'] = self.extra_gen
         btn_xtr_rnd['command'] = self.extra_rnd
+        btn_to_full['command'] = self.run_to_full
 
     def extra_gen(self):
         global GENERATIONS
@@ -477,7 +482,17 @@ class NCSim:
         global EXTRA_RNDS
         EXTRA_RNDS = EXTRA_RNDS + 1
         self.run_round(GENERATIONS, ROUNDS + EXTRA_RNDS)
+        self.end_generation()
 
+    def run_to_full(self):
+        counter = 0
+        while sum(self.full_AoD) != NUM_OF_NODES:
+            self.extra_rnd()
+            counter = counter + 1
+            if counter == 100:
+                trace.error('TIMEOUT!!')
+                break
+            
     # Analysis Sequence
     def set_analysis(self):
         self.screen.enable_btns()
