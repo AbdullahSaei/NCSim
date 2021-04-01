@@ -1,6 +1,7 @@
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 import numpy as np
+from statistics import mean
 import tkinter as tk
 import tkinter.ttk as ttk
 from turtle import Turtle
@@ -179,19 +180,34 @@ class Controller:
         # Analysis tabs
         n = ttk.Notebook(self.anlys)
         self.summ_frame = ttk.Frame(n)   # first page
-        self.grph_frame = ttk.Frame(n)   # second page
-        n.add(self.summ_frame, text='Summary')
-        n.add(self.grph_frame, text='Graphs')
+        self.aod_grph_frame = ttk.Frame(n)   # second page
+        self.ranks_grph_frame = ttk.Frame(n)   # third page
+        n.add(self.summ_frame, text='Statistics')
+        n.add(self.aod_grph_frame, text='AoD Graph')
+        n.add(self.ranks_grph_frame, text='Ranks Graph')
         n.pack(fill=tk.BOTH, expand=1)
 
+        self.avg_rank = []
+
         self.create_controller()
-        self.create_graphs(self.grph_frame)
+        self.aod_ax, self.aod_canvas = self.create_graph(self.aod_grph_frame)
+        self.ranks_ax, self.ranks_canvas = self.create_graph(
+            self.ranks_grph_frame)
         self.create_analysis(self.summ_frame)
+
+    def create_graph(self, root):
+        fig, ax = plt.subplots()
+
+        canvas = FigureCanvasTkAgg(fig, master=root)
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        canvas.draw()
+        return (ax, canvas)
 
     def create_analysis(self, master):
         # tk.Label(master, text="Current Status:").pack(side=tk.TOP)
         headers = ["Max AoD:", "Avg AoD:", "Nodes 100%:", "Nodes <50%"]
         vals = [0 for _ in range(self.num_nodes)]
+        ranks = [(0, 0, 0, 0, 0) for _ in range(self.num_nodes)]
         self.lbl_headers = tk.Label(master)
         self.lbl_headers.config(
             font='{Fira Sans} 12 {bold}', text=("\n".join(headers)))
@@ -199,35 +215,59 @@ class Controller:
 
         self.lbl_vals = tk.Label(master)
         self.lbl_vals.pack(side=tk.LEFT, pady=10, padx=5, fill=tk.BOTH)
-        self.update_analysis(vals)
+        self.update_analysis(vals, ranks, 0)
 
-    def create_graphs(self, root):
-        fig = plt.figure(figsize=(4, 4))
-        self.ax = fig.add_axes([0.1,0.1,0.8,0.8])
-    
-        self.canvas = FigureCanvasTkAgg(fig, master=root)
-        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-        self.canvas.draw()
-
-    def update_analysis(self, vals):
+    def update_analysis(self, vals, ranks, r_num):
         arr = np.array(vals)
+        _ranks, *_ = zip(*ranks)
+        self.avg_rank.append(mean(_ranks))
+
         f_dn = len(arr[arr == 100]) if arr[arr == 100].any() else 0
         h_dn = len(arr[arr <= 50]) if arr[arr <= 50].any() else 0
         values = [f"{arr.max():.2f}%", f"{arr.mean():.2f}%",
                   f"{f_dn}/{self.num_nodes}", f"{h_dn}/{self.num_nodes}"]
         self.lbl_vals.config(font='{Fira Sans} 11', text=("\n".join(values)))
 
-        # Graph update
-        n_range = [*range(self.num_nodes)]
-        self.ax.clear()         # clear axes from previous plot
-        self.ax.set_title('Availability of data of nodes')
-        self.ax.set_xlabel('Nodes')
-        self.ax.set_xticks(n_range)
-        self.ax.set_ylabel('Availability of Data')
-        self.ax.set_ylim(0, 100)     # set the ylim to bottom, top
+        self.update_graph(arr, r_num, self.aod_ax, self.aod_canvas)
+        self.update_ranks_graph(self.avg_rank, r_num,
+                                self.ranks_ax, self.ranks_canvas)
+        # print(ranks)
 
-        self.ax.bar(n_range, arr)
-        self.canvas.draw()
+    def update_graph(self, arr, round_no, ax, canvas):
+        # Graphs update
+        n_range = [*range(self.num_nodes)]
+        ax.clear()         # clear axes from previous plot
+        ax.set_title(f'Availability of data for {self.num_nodes} nodes @ tx {round_no}')
+        ax.set_xlabel('Nodes')
+        ax.set_xticks(n_range)
+        ax.set_ylabel('Availability of Data percentage (%)')
+        ax.set_ylim(0, 100)     # set the ylim to bottom, top
+        ax.bar(n_range, arr)
+        canvas.draw()
+
+    def update_ranks_graph(self, arr, round_no, ax, canvas):
+        x_range = np.arange(1, round_no+1)
+        # Graphs update
+        ax.clear()         # clear axes from previous plot
+        ax.plot(arr)
+        ax.set_title(f'Avg {self.num_nodes} decoder ranks vs num of tx')
+        ax.set_xlabel(f'Num of tx to {round_no+1}')
+        ax.set_xlim(1, round_no)
+        ax.set_xticks(x_range)
+        ax.set_ylabel('Avg decoders rank')
+        # set the ylim to bottom, top
+        ax.set_yticks(np.arange(self.num_nodes+1))
+        ax.margins(x=0)
+        ax.grid()
+        # Add a vertical line at first reach
+        if self.num_nodes in arr:
+            index = np.searchsorted(arr, self.num_nodes)
+            ax.axvline(index, ls='--', color='r')
+        canvas.draw()
+        # print("done")
+
+    def clear_rank(self):
+        self.avg_rank = []
 
     def create_controller(self):
         # Radio buttons

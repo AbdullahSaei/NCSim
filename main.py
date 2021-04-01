@@ -13,9 +13,6 @@ def main():
     sim.run_generations()
     print("Done Simulation")
 
-    # Analysis phase
-    sim.set_analysis()
-
     # Keep window open
     sim.end_keep_open()
 

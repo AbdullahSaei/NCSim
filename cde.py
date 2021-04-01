@@ -66,6 +66,7 @@ def callback_function(zone, message):
 nodes = []
 data_in = []
 data_out = []
+ranks = []
 
 def kodo_init():# Create list of encoder and decoder triples
     global nodes
@@ -85,6 +86,7 @@ def kodo_init():# Create list of encoder and decoder triples
         decoder.set_seed(seed)
         # decoder.set_log_callback(callback_function)
         nodes.append([i, encoder, decoder])
+        ranks.append((0,0,0,0,0))
 
 
 def generate_data():
@@ -130,14 +132,14 @@ def node_broadcast(node, neighbours, round, logger):
         "node {:2},tx{:2},broadcast to {} nodes".format(
             i, round, len(neighbours)))
 
-    print("\nDecoder rank: {}/{}".format(decoder.rank(), symbols))
-    print(f"Node {i} sending to ", end='')
+    # print("\nDecoder rank: {}/{}".format(decoder.rank(), symbols))
+    # print(f"Node {i} sending to ", end='')
     for n in neighbours:
         # get kodo encoder and decoder of the neighbor
         n_i, n_encoder, n_decoder = nodes[n.node_id]
-        print(f"{n_i:02} ", end='')
+        # print(f"{n_i:02} ", end='')
         n.access_rx_buffer(i, pack, node.sending_channel)
-    print("")
+    # print("")
 
 
 def node_receive(node, packets, round, logger):
@@ -147,12 +149,20 @@ def node_receive(node, packets, round, logger):
     if len(packets) > 0:
         for p in packets:
             decoder.consume_payload(p)
-        log_msg += "part/decoded/missing/total {}/{}/{}/{}".format(
-            decoder.symbols_partially_decoded(),
-            decoder.symbols_decoded(),
-            decoder.symbols_missing(),
-            decoder.symbols())
+
+        decoder.update_symbol_status()
+        ranks[i] = (
+                    decoder.rank(),
+                    decoder.symbols_partially_decoded(),
+                    decoder.symbols_decoded(),
+                    decoder.symbols_missing(),
+                    decoder.symbols()
+                )
+        log_msg += "rank/part/decoded/missing/total {}/{}/{}/{}/{}".format(
+            *ranks[i])
         logger.info(log_msg)
+
+
     else:
         log_msg += "no buffered packets"
         logger.warning(log_msg)
@@ -172,6 +182,8 @@ def calculate_aod(round="i", logger=None):
         aods.append(sum(aod)/len(aod) * 100)
     return aods
 
+def get_ranks(index):
+    return ranks[index]
 
 def clean_up_all():
     kodo_init()

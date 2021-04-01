@@ -345,7 +345,8 @@ class NCSim:
                 trace.info(msg.replace(",init,", " has "))
             self.screen.hide_coverage()
         # Loop over all nodes
-        self.screen.visual_output_msg(f"Please choose running method from the controller")
+        self.screen.visual_output_msg(
+            f"Please choose running method from the controller")
 
     def get_nodes_cor(self):
         return [n.pos() for n in self.nodes]
@@ -386,7 +387,7 @@ class NCSim:
         self.tx_phase(r)
 
         # TODO remove this delay
-        time.sleep(0.1)
+        # time.sleep(0.1)
 
         # Receiving PHASE
         # logging:
@@ -399,7 +400,7 @@ class NCSim:
         self.rx_phase(r)
 
         # TODO remove this delay
-        time.sleep(0.1)
+        # time.sleep(0.1)
 
         # Collect data of the round
         self.end_round(r)
@@ -418,8 +419,9 @@ class NCSim:
 
         # LOGGING:
         trace.info(f"generation {g} begin")
-        print("\n Generation {} \n".format(g))
+        print("\nGeneration {} \n".format(g))
         # clean up before new generation
+        self.ctrl.clear_rank()
         cde.clean_up_all()
         # Generate new data
         cde.generate_data()
@@ -429,27 +431,27 @@ class NCSim:
             self.run_round(g, r)
         self.end_generation()
 
-    def end_round(self, round):
+    def end_round(self, round_num):
         # calculate data for the round
-        aods = cde.calculate_aod(round, logger=kpi)
-        # rank_txs = cde.calculate_rank_txs(round, logger=kpi)
+        aods = cde.calculate_aod(round_num, logger=kpi)
+        ranks = [cde.get_ranks(n.node_id) for n in self.nodes]
         [n.print_aod_percentage(aods[i]) for i, n in enumerate(self.nodes)]
-        self.ctrl.update_analysis(aods)
-        print("end round")
+        self.ctrl.update_analysis(aods, ranks, ROUNDS + EXTRA_RNDS)
+        print(f"end round {round_num}")
 
     def end_generation(self):
         # Calculate nodes with 100% AoD
-        self.full_AoD = [1 if n.aod == 100 else 0 for _, n in enumerate(self.nodes)]
+        self.full_AoD = [1 if n.aod == 100 else 0 for _,
+                         n in enumerate(self.nodes)]
         kpi.info("totn {},al{},AoD {:2}/{} has 100%".format(
-                NUM_OF_NODES, 
-                ROUNDS + EXTRA_RNDS,
-                sum(self.full_AoD),len(self.full_AoD)))
+            NUM_OF_NODES,
+            ROUNDS + EXTRA_RNDS,
+            sum(self.full_AoD), len(self.full_AoD)))
 
         if self.ctrl.is_continuous_run() > 1:
             self.ctrl.enable_nxt_btn('gen')
             self.ctrl.cont_run.set(1)
             self.ctrl.dis_rnd()
-        print("end generation")
 
     # Simulation Sequence
     def run_generations(self):
@@ -496,10 +498,6 @@ class NCSim:
             if counter == 100:
                 trace.error('TIMEOUT!!')
                 break
-            
-    # Analysis Sequence
-    def set_analysis(self):
-        self.screen.enable_btns()
 
     def end_keep_open(self):
         self.screen.mainloop()

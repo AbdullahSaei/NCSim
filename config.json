@@ -18,13 +18,13 @@
     "button_height": 30
   },
   "Parameters": {
-    "nodes_num": 21,
+    "nodes_num": 50,
     "seed": 32,
     "node_buffer_size": 100,
     "generations_num": 2,
     "generation_time_ms": 1000,
     "action_time_ms": 100,
-    "topology": "ring",
+    "topology": "grid",
     "min_dist_between_nodes": 80,
     "nodes_coverage": 100,
     "packet_size_bytes": 100,

@@ -1,6 +1,5 @@
 from turtle import Screen, Turtle, onscreenclick
 import tkinter as tk
-from tkinter import ttk
 import json
 
 try:
@@ -94,9 +93,6 @@ class NCSimVisualizer:
         # Call Screen Init Method
         self.screen_init()
 
-        # Create buttons
-        self.create_btns()
-
     def screen_init(self):
         # Set Screen Dimensions and Coloring
         self.screen.setup(TOTAL_WIDTH, TOTAL_HEIGHT)
@@ -129,7 +125,7 @@ class NCSimVisualizer:
         y_cor = int((TOTAL_HEIGHT / 2) - (3 / 4 * HEAD_MARGIN))
         self.layout_cursor.setposition(x_cor, y_cor)
         self.layout_cursor.write(f"{SCREEN_HEADER}", align="Center",
-                                font=("Calibri", HEADER_FONT_SIZE, "bold"))
+                                 font=("Calibri", HEADER_FONT_SIZE, "bold"))
 
         x_cor = 20 - (int(SCREEN_WIDTH / 2))
         y_cor = (int(TOTAL_HEIGHT / 2)) - (HEAD_MARGIN + 40)
@@ -153,8 +149,8 @@ class NCSimVisualizer:
         y_cor = (SCREEN_MARGIN + 15) - (int(TOTAL_HEIGHT / 2))
         self.msg_cursor.setposition(x_cor, y_cor)
         self.msg_cursor.clear()
-        self.msg_cursor.write(f"{message}", align="Left", 
-                            font=("Calibri", TEXT_FONT_SIZE, "bold"))
+        self.msg_cursor.write(f"{message}", align="Left",
+                              font=("Calibri", TEXT_FONT_SIZE, "bold"))
 
     def visual_send_packet(self, tx_node, rx_nodes):
         # draw arrow for all neighbors
@@ -189,39 +185,6 @@ class NCSimVisualizer:
         self.cvrg_cursur.pendown()
         self.cvrg_cursur.clear()
         self.cvrg_cursur.penup()
-
-    def button_click(self):
-        print("Button pressed")
-        if False:
-            # When Pressed, Execute Below>> Below is a testing code to be edited"
-            self.layout_cursor.color("black")
-            self.layout_cursor.setposition(0, 0)
-            self.layout_cursor.write("TestString: Button Pressed!", align="Left",
-                                    font=("Calibri", 12, "bold"))
-
-    def enable_btns(self):
-        self.btn_show_analysis['state'] = 'normal'
-        print("button")
-
-    def create_btns(self):
-        self.style = ttk.Style()
-        self.style.theme_use('alt')
-        self.style.configure('TButton', background='midnight blue', foreground='white',
-                             font=("Calibri", 12, "bold"), borderwidth=1, focusthickness=3,
-                             focuscolor='none')
-        self.style.map('TButton', background=[
-                       ('disabled', 'gray'), ('active', 'medium blue')])
-
-        self.btn_show_analysis = ttk.Button(self.root, text="Analyze Data",
-                                            command=self.button_click)
-
-        # Locate Coordinates
-        x_cor = TOTAL_WIDTH - SCREEN_MARGIN - BUTTON_WIDTH - 10
-        y_cor = TOTAL_HEIGHT - SCREEN_MARGIN - BUTTON_HEIGHT - 21
-
-        # self.btn_show_analysis.place(
-        #    x=x_cor, y=y_cor, width=BUTTON_WIDTH, height=BUTTON_HEIGHT)
-        self.btn_show_analysis['state'] = 'disabled'
 
     def screen_refresh(self):
         self.screen.update()

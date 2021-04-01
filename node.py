@@ -127,7 +127,7 @@ class Node(Turtle):
                 s += "{:2} ".format(src)
                 packs.append(pack)
             
-            print("node {:2} received from ".format(self.node_id) + s)
+            # print("node {:2} received from ".format(self.node_id) + s)
             return packs
         else:
             print("node {:2} no buffer".format(self.node_id))
