@@ -219,8 +219,8 @@ class NCSimVisualizer:
         x_cor = TOTAL_WIDTH - SCREEN_MARGIN - BUTTON_WIDTH - 10
         y_cor = TOTAL_HEIGHT - SCREEN_MARGIN - BUTTON_HEIGHT - 21
 
-        self.btn_show_analysis.place(
-            x=x_cor, y=y_cor, width=BUTTON_WIDTH, height=BUTTON_HEIGHT)
+        # self.btn_show_analysis.place(
+        #    x=x_cor, y=y_cor, width=BUTTON_WIDTH, height=BUTTON_HEIGHT)
         self.btn_show_analysis['state'] = 'disabled'
 
     def screen_refresh(self):

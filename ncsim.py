@@ -1,6 +1,6 @@
 from turtle import Turtle
 from node import Node
-from mouseclick import MouseClick, Controller
+from controller import MouseClick, Controller
 from platform import system as os_type
 import ncsim_visualizer as ncsv
 import json
@@ -137,7 +137,7 @@ class NCSim:
         self.screen.set_click_listener(fun=self.mclick.popup, btn=3, add=True)
 
         # Init controller window
-        self.ctrl = Controller(self.screen.root)
+        self.ctrl = Controller(self.screen.root, NUM_OF_NODES)
 
         print("init done")
 
@@ -344,6 +344,8 @@ class NCSim:
                 kpi.info(msg)
                 trace.info(msg.replace(",init,", " has "))
             self.screen.hide_coverage()
+        # Loop over all nodes
+        self.screen.visual_output_msg(f"Please choose running method from the controller")
 
     def get_nodes_cor(self):
         return [n.pos() for n in self.nodes]
@@ -430,7 +432,9 @@ class NCSim:
     def end_round(self, round):
         # calculate data for the round
         aods = cde.calculate_aod(round, logger=kpi)
+        # rank_txs = cde.calculate_rank_txs(round, logger=kpi)
         [n.print_aod_percentage(aods[i]) for i, n in enumerate(self.nodes)]
+        self.ctrl.update_analysis(aods)
         print("end round")
 
     def end_generation(self):

@@ -1,6 +1,11 @@
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
+import numpy as np
 import tkinter as tk
-from tkinter import ttk
+import tkinter.ttk as ttk
 from turtle import Turtle
+import matplotlib
+matplotlib.use('TkAgg')
 
 
 class MouseClick:
@@ -153,28 +158,103 @@ class MouseClick:
 
 
 class Controller:
-    def __init__(self, master):
+    def __init__(self, master, num_nodes):
         self.root = master
-        self.ctrlr = tk.Toplevel(self.root, padx=10, pady=10)
-        self.ctrlr.wm_title("Controller")
+        self.num_nodes = num_nodes
+
+        # Create tools window
+        tools = tk.Toplevel(self.root, padx=10, pady=10)
+        tools.wm_title("Tools")
+
+        # Create pane
+        p = ttk.Panedwindow(tools, orient=tk.HORIZONTAL)
+        p.pack(fill=tk.BOTH, expand=1)
+
+        # two panes, each of which would get widgets into it:
+        self.ctrlr = ttk.Labelframe(p, text='Controller')
+        self.anlys = ttk.Labelframe(p, text='Analysis')
+        p.add(self.ctrlr)
+        p.add(self.anlys)
+
+        # Analysis tabs
+        n = ttk.Notebook(self.anlys)
+        self.summ_frame = ttk.Frame(n)   # first page
+        self.grph_frame = ttk.Frame(n)   # second page
+        n.add(self.summ_frame, text='Summary')
+        n.add(self.grph_frame, text='Graphs')
+        n.pack(fill=tk.BOTH, expand=1)
+
+        self.create_controller()
+        self.create_graphs(self.grph_frame)
+        self.create_analysis(self.summ_frame)
+
+    def create_analysis(self, master):
+        # tk.Label(master, text="Current Status:").pack(side=tk.TOP)
+        headers = ["Max AoD:", "Avg AoD:", "Nodes 100%:", "Nodes <50%"]
+        vals = [0 for _ in range(self.num_nodes)]
+        self.lbl_headers = tk.Label(master)
+        self.lbl_headers.config(
+            font='{Fira Sans} 12 {bold}', text=("\n".join(headers)))
+        self.lbl_headers.pack(side=tk.LEFT, pady=10, padx=5, fill=tk.BOTH)
+
+        self.lbl_vals = tk.Label(master)
+        self.lbl_vals.pack(side=tk.LEFT, pady=10, padx=5, fill=tk.BOTH)
+        self.update_analysis(vals)
+
+    def create_graphs(self, root):
+        fig = plt.figure(figsize=(4, 4))
+        self.ax = fig.add_axes([0.1,0.1,0.8,0.8])
+    
+        self.canvas = FigureCanvasTkAgg(fig, master=root)
+        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        self.canvas.draw()
+
+    def update_analysis(self, vals):
+        arr = np.array(vals)
+        f_dn = len(arr[arr == 100]) if arr[arr == 100].any() else 0
+        h_dn = len(arr[arr <= 50]) if arr[arr <= 50].any() else 0
+        values = [f"{arr.max():.2f}%", f"{arr.mean():.2f}%",
+                  f"{f_dn}/{self.num_nodes}", f"{h_dn}/{self.num_nodes}"]
+        self.lbl_vals.config(font='{Fira Sans} 11', text=("\n".join(values)))
+
+        # Graph update
+        n_range = [*range(self.num_nodes)]
+        self.ax.clear()         # clear axes from previous plot
+        self.ax.set_title('Availability of data of nodes')
+        self.ax.set_xlabel('Nodes')
+        self.ax.set_xticks(n_range)
+        self.ax.set_ylabel('Availability of Data')
+        self.ax.set_ylim(0, 100)     # set the ylim to bottom, top
+
+        self.ax.bar(n_range, arr)
+        self.canvas.draw()
+
+    def create_controller(self):
+        # Radio buttons
+        # Container for Radio buttons
+        tk.Label(self.ctrlr, text='methods:', anchor='w').pack(pady=(10, 0))
+        # Radio variable
         self.cont_run = tk.IntVar()
-        lf = ttk.Labelframe(self.ctrlr, text='methods')
-        self.R1 = tk.Radiobutton(lf, text="Run all",
+        self.cont_run.set(3)
+        self.R1 = tk.Radiobutton(self.ctrlr, text="Run all",
                                  variable=self.cont_run, value=0,
                                  command=self.dis_btns)
         self.R1.pack(anchor=tk.W)
 
-        self.R2 = tk.Radiobutton(lf, text="Stop @ generations",
+        self.R2 = tk.Radiobutton(self.ctrlr, text="Stop @ generations",
                                  variable=self.cont_run, value=1,
                                  command=lambda: self.enable_nxt_btn('gen'))
         self.R2.pack(anchor=tk.W)
 
-        self.R3 = tk.Radiobutton(lf, text="Stop @ rounds",
+        self.R3 = tk.Radiobutton(self.ctrlr, text="Stop @ rounds",
                                  variable=self.cont_run, value=2,
                                  command=lambda: self.enable_nxt_btn('rnd'))
         self.R3.pack(anchor=tk.W)
-        lf.pack(side='top', pady=10)
 
+        ttk.Separator(self.ctrlr, orient='horizontal').pack(
+            side='top', fill='x', pady=10)
+
+        # NEXT Push buttons
         self.is_nxt = tk.BooleanVar(value=False)
         self.btn_nxt_gen = tk.Button(
             self.ctrlr, text="Next generation", width=15,
@@ -188,8 +268,10 @@ class Controller:
         self.btn_nxt_rnd['state'] = 'disabled'
         self.btn_nxt_rnd.pack()
 
-        ttk.Separator(self.ctrlr, orient='horizontal').pack(side='top', fill='x', pady=10)
+        ttk.Separator(self.ctrlr, orient='horizontal').pack(
+            side='top', fill='x', pady=10)
 
+        # EXTRA push buttons
         self.btn_xtr_gen = tk.Button(
             self.ctrlr, text="Extra generation", width=15)
         self.btn_xtr_gen['state'] = 'disabled'
@@ -200,8 +282,10 @@ class Controller:
         self.btn_xtr_rnd['state'] = 'disabled'
         self.btn_xtr_rnd.pack()
 
-        ttk.Separator(self.ctrlr,orient='horizontal').pack(side='top', fill='x', pady=10)
-        
+        ttk.Separator(self.ctrlr, orient='horizontal').pack(
+            side='top', fill='x', pady=10)
+
+        # footer buttons
         self.btn_to_full = tk.Button(
             self.ctrlr, text="Full AoD",  width=15)
         self.btn_to_full['state'] = 'disabled'
@@ -218,13 +302,13 @@ class Controller:
             self.R1.configure(state=tk.DISABLED)
             self.R2.configure(state=tk.DISABLED)
             self.R3.configure(state=tk.DISABLED)
-    
+
     def dis_rnd(self):
         self.R3.configure(state=tk.DISABLED)
-    
+
     def enb_rnd(self):
         self.R3.configure(state=tk.NORMAL)
-    
+
     def enable_nxt_btn(self, btn):
         if btn == "gen":
             self.btn_nxt_gen['state'] = 'normal'
