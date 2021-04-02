@@ -215,9 +215,9 @@ class Controller:
 
         self.lbl_vals = tk.Label(master)
         self.lbl_vals.pack(side=tk.LEFT, pady=10, padx=5, fill=tk.BOTH)
-        self.update_analysis(vals, ranks, 0)
+        self.update_analysis(vals, ranks, 0, 0)
 
-    def update_analysis(self, vals, ranks, r_num):
+    def update_analysis(self, vals, ranks, r_num, r_xtra=0):
         arr = np.array(vals)
         _ranks, *_ = zip(*ranks)
         self.avg_rank.append(mean(_ranks))
@@ -229,7 +229,7 @@ class Controller:
         self.lbl_vals.config(font='{Fira Sans} 11', text=("\n".join(values)))
 
         self.update_graph(arr, r_num, self.aod_ax, self.aod_canvas)
-        self.update_ranks_graph(self.avg_rank, r_num,
+        self.update_ranks_graph(self.avg_rank, r_num, r_xtra,
                                 self.ranks_ax, self.ranks_canvas)
         # print(ranks)
 
@@ -237,7 +237,8 @@ class Controller:
         # Graphs update
         n_range = [*range(self.num_nodes)]
         ax.clear()         # clear axes from previous plot
-        ax.set_title(f'Availability of data for {self.num_nodes} nodes @ tx {round_no}')
+        ax.set_title(
+            f'Availability of data for {self.num_nodes} nodes @ tx {round_no}')
         ax.set_xlabel('Nodes')
         ax.set_xticks(n_range)
         ax.set_ylabel('Availability of Data percentage (%)')
@@ -245,24 +246,32 @@ class Controller:
         ax.bar(n_range, arr)
         canvas.draw()
 
-    def update_ranks_graph(self, arr, round_no, ax, canvas):
-        x_range = np.arange(1, round_no+1)
+    def update_ranks_graph(self, arr, r_num, r_xtra, ax, canvas):
+        round_no = r_num + r_xtra
+        x_range = np.arange(0, round_no+1)
         # Graphs update
         ax.clear()         # clear axes from previous plot
         ax.plot(arr)
         ax.set_title(f'Avg {self.num_nodes} decoder ranks vs num of tx')
-        ax.set_xlabel(f'Num of tx to {round_no+1}')
-        ax.set_xlim(1, round_no)
+        ax.set_xlabel(f'Num of {round_no} txs')
+        ax.set_xlim(0, round_no)
         ax.set_xticks(x_range)
         ax.set_ylabel('Avg decoders rank')
         # set the ylim to bottom, top
         ax.set_yticks(np.arange(self.num_nodes+1))
         ax.margins(x=0)
         ax.grid()
-        # Add a vertical line at first reach
+        # Add horizontal lines
+        ax.axhline(self.num_nodes, label="max rank", ls='--', color='r')
+        # Add a vertical lines
+        if r_xtra:
+            ax.axvline(r_num, label=f"tx = {r_num}", ls=':', color='r')
+            ax.axhline(np.interp(r_num, x_range[:-1], arr),
+                       label=f"rank @ tx {r_num}", ls='--', color='gray')
         if self.num_nodes in arr:
             index = np.searchsorted(arr, self.num_nodes)
-            ax.axvline(index, ls='--', color='r')
+            ax.axvline(index, label="full AoD", ls='--', color='g')
+        ax.legend(loc='upper left')
         canvas.draw()
         # print("done")
 

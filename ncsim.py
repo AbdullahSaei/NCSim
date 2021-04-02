@@ -436,7 +436,7 @@ class NCSim:
         aods = cde.calculate_aod(round_num, logger=kpi)
         ranks = [cde.get_ranks(n.node_id) for n in self.nodes]
         [n.print_aod_percentage(aods[i]) for i, n in enumerate(self.nodes)]
-        self.ctrl.update_analysis(aods, ranks, ROUNDS + EXTRA_RNDS)
+        self.ctrl.update_analysis(aods, ranks, ROUNDS, EXTRA_RNDS)
         print(f"end round {round_num}")
 
     def end_generation(self):
