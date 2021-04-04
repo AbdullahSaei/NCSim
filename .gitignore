@@ -5,6 +5,7 @@ kodo.py
 dummy_kodo.py
 **.csv
 **.log
+**.txt
 venv
 examples
 tester.py

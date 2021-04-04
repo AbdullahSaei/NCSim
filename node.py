@@ -18,7 +18,18 @@ class Node(Turtle):
         self.ch_num = int(kwargs.get("channels", 2))
         self.ts_num = int(kwargs.get("timeslots", 2))
         self.sending_channel = (0, 0)
+        self.clear_counters()
+
+    def clear_counters(self):
         self.aod = 0
+        self.rank = 0
+        self.missing = 0
+        self.tx_count = 0
+        self.total_rx_count = 0
+        self.success_rx_count = 0
+        self.collision_count = 0
+        self.ig_msgs_count = 0
+        self.packet_loss_count = 0
 
     def place_node(self, position, only_fd=None):
         self.shape("circle")
@@ -46,6 +57,9 @@ class Node(Turtle):
     def get_neighbors(self):
         return self.neighbors
 
+    def update_tx_counter(self):
+        self.tx_count = self.tx_count + len(self.neighbors) 
+
     def sense_spectrum(self, packet_loss_percent, logger=None):
         # To simulate pathloss effect
         packet_loss_prob = packet_loss_percent / 100
@@ -54,11 +68,14 @@ class Node(Turtle):
         rx_msg = []
         # if there is available message
         if len(self.avaliable_messages) > 0:
+            # Total received messages
+            self.total_rx_count = self.total_rx_count + len(self.avaliable_messages)
             logger.info(
                 "node {:2} found {:2} msgs".format(
                     self.node_id, len(self.avaliable_messages)
                 )
             )
+
             # remove collisions
             all_srcs = [src for _, _, src in self.avaliable_messages]
             # survivor msgs from collisions
@@ -68,6 +85,8 @@ class Node(Turtle):
                 if freq == 1:
                     unq_msgs.append((i, m, src))
                 else:
+                    # number of collided msgs
+                    self.collision_count = self.collision_count + 1
                     logger.warning(
                         "node {:2} collision @ {} discard msg".format(
                             self.node_id, src
@@ -78,6 +97,9 @@ class Node(Turtle):
             for i, channel_msg, ch_ts in unq_msgs:
                 # node cannot transmit and receive at the same time
                 if ch_ts[1] == self.sending_channel[1]:
+                    # update counter
+                    self.ig_msgs_count = self.ig_msgs_count + 1
+                    # log information
                     logger.warning(
                         "node {:2} tx on {} discard rx msg on {}".format(
                             self.node_id, self.sending_channel, ch_ts
@@ -90,6 +112,7 @@ class Node(Turtle):
                 if success:
                     rx_msg.append((i, channel_msg))
                 else:
+                    self.packet_loss_count = self.packet_loss_count + 1 
                     logger.warning("node {:2} packet loss".format(self.node_id))
                     continue
 
@@ -106,13 +129,13 @@ class Node(Turtle):
         else:
             logger.critical("node {:2} No available msgs".format(self.node_id))
 
-        # discard other available messages
-        # for next round clean startup
-        self.avaliable_messages = []
         # not all received messages can fit into the buffer
         if len(rx_msg) > self.buffer_size:
             rx_msg = random.choice(rx_msg, size=(
                 self.buffer_size), replace=False)
+        
+        # update counter
+        self.success_rx_count = self.success_rx_count + len(rx_msg)
         # successful messages to the buffer
         self.rx_buffer = rx_msg
 
@@ -133,24 +156,33 @@ class Node(Turtle):
             print("node {:2} no buffer".format(self.node_id))
             return None
     
-    def print_aod_percentage(self, aod):
+    def print_aod_percentage(self, r_num, aod, ranks):
         self.aod = aod
+        self.rank, *_, self.missing, _ = ranks
         self.undo()
         self.write(f"  {aod:3.0f}%", align="left",
                    font=("sans", 12))
-        self.clear_rx_buffer()
+        self.new_round_cleanup()
+        return self.get_statistics(r_num)
 
-    def set_data_packet(self, data):
-        self.data_msg = data
-
-    def recode_packets(self):
-        self.data_msg = self.decoder.produce_payload()
-
-    def tx_packet(self, rx_node, packet):
-        # Send Packet, to current rx_node
-        rx_node.access_rx_buffer(packet, self.sending_channel)
-
-    def clear_rx_buffer(self):
+    def new_round_cleanup(self):
+        # discard other available messages
+        # for next round clean startup
+        self.avaliable_messages = []
         # Clear buffer
         self.rx_buffer = []
 
+    def get_statistics(self, r):
+        return {
+            "round": r, 
+            "node": self.node_id, 
+            "AoD_%": self.aod, 
+            "rank": self.rank, 
+            "missing": self.missing,           
+            "tx_total": self.tx_count, 
+            "rx_total": self.total_rx_count,
+            "rx_successful": self.success_rx_count, 
+            "collisions": self.collision_count, 
+            "ignored_msgs_count": self.ig_msgs_count,
+            "FSPL_%": self.packet_loss_count
+        }

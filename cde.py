@@ -48,18 +48,18 @@ fifi = {
 field = fifi.get(FINITE_FIELD, "binary")
 symbols = NUM_OF_NODES
 symbol_size = PACKET_SIZE
-
+logger = None
 
 # Pesudo random seed
 np.random.seed(SEED_VALUE)
 
 # We want to follow the decoding process step-by-step
-
+def set_logger(log):
+    global logger
+    logger = log
 
 def callback_function(zone, message):
-    if zone in ["decoder_state", "symbol_coefficients_before_consume_symbol"]:
-        print("{}:".format(zone))
-        print(message)
+    logger.info(f"*******\n{zone}\n*******\n==========\n{message}\n==========\n")
 
 
 # Global scope Create list of encoder and decoder triples
@@ -84,7 +84,7 @@ def kodo_init():# Create list of encoder and decoder triples
         # init decoder
         decoder = kodo.RLNCDecoder(field, symbols, symbol_size)
         decoder.set_seed(seed)
-        # decoder.set_log_callback(callback_function)
+        decoder.set_log_callback(callback_function)
         nodes.append([i, encoder, decoder])
         ranks.append((0,0,0,0,0))
 
@@ -136,7 +136,7 @@ def node_broadcast(node, neighbours, round, logger):
     # print(f"Node {i} sending to ", end='')
     for n in neighbours:
         # get kodo encoder and decoder of the neighbor
-        n_i, n_encoder, n_decoder = nodes[n.node_id]
+        # n_i, n_encoder, n_decoder = nodes[n.node_id]
         # print(f"{n_i:02} ", end='')
         n.access_rx_buffer(i, pack, node.sending_channel)
     # print("")

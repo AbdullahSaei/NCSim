@@ -1,6 +1,7 @@
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from statistics import mean
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -159,9 +160,11 @@ class MouseClick:
 
 
 class Controller:
-    def __init__(self, master, num_nodes):
+    def __init__(self, master, summ_header, **configs):
         self.root = master
-        self.num_nodes = num_nodes
+        self.summ_header = summ_header
+        self.configs = configs
+        self.num_nodes = int(configs.get("num_nodes", 0))
 
         # Create tools window
         tools = tk.Toplevel(self.root, padx=10, pady=10)
@@ -179,21 +182,22 @@ class Controller:
 
         # Analysis tabs
         n = ttk.Notebook(self.anlys)
-        self.summ_frame = ttk.Frame(n)   # first page
+        self.stat_frame = ttk.Frame(n)      # first page
         self.aod_grph_frame = ttk.Frame(n)   # second page
         self.ranks_grph_frame = ttk.Frame(n)   # third page
-        n.add(self.summ_frame, text='Statistics')
+        self.summ_frame = ttk.Frame(n)   # forth page
+        n.add(self.stat_frame, text='Statistics')
         n.add(self.aod_grph_frame, text='AoD Graph')
         n.add(self.ranks_grph_frame, text='Ranks Graph')
+        n.add(self.summ_frame, text='Summary')
         n.pack(fill=tk.BOTH, expand=1)
 
-        self.avg_rank = []
-
+        self.new_generation_cleanup(clear_frames=False)
         self.create_controller()
         self.aod_ax, self.aod_canvas = self.create_graph(self.aod_grph_frame)
         self.ranks_ax, self.ranks_canvas = self.create_graph(
             self.ranks_grph_frame)
-        self.create_analysis(self.summ_frame)
+        self.create_analysis(self.stat_frame)
 
     def create_graph(self, root):
         fig, ax = plt.subplots()
@@ -203,21 +207,93 @@ class Controller:
         canvas.draw()
         return (ax, canvas)
 
+    def display_data(self, frame, values, headers=None, assert_empty=False):
+        # check if frame is empty
+        if assert_empty and frame.winfo_children():
+            return False
+        elif frame.winfo_children():
+            lbl_headers, lbl_vals = frame.winfo_children()
+        else:
+            lbl_headers = tk.Label(frame)
+            lbl_vals = tk.Label(frame)
+
+        # Create header
+        if headers:
+            lbl_headers.config(
+                font='{Fira Sans} 12 {bold}', text=("\n".join(
+                    map(lambda s: f"{s.replace('_', ' ')}:", headers)
+                )))
+            lbl_headers.pack(side=tk.LEFT, pady=10, padx=5, fill=tk.BOTH)
+
+        # Create values label
+        lbl_vals.config(font='{Fira Sans} 12', text=(
+            "\n".join(map(str, values))))
+        lbl_vals.pack(side=tk.LEFT, pady=10, padx=5, fill=tk.BOTH)
+
+    def create_summ_tree(self, root):
+        # taking all the columns heading in a variable "df_col".
+        df = self.df_nodes
+        df_col = df.columns.values
+        
+        # create scrollbar
+        scroll = ttk.Scrollbar(root)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        # create treeview
+        tree = ttk.Treeview(root, show='headings', height=7, yscrollcommand=scroll.set)
+        scroll.config(command=tree.yview)
+        # all the column name are generated dynamically.
+        tree['columns'] = (df_col)
+
+        # generating for loop to create columns and give heading to them through df_col var.
+        for col, x in enumerate(df_col):
+            tree.column(col, width=50, anchor='e')
+            tree.heading(col, text=x.replace('_', ' '), command=lambda _col=col: \
+                     self.treeview_sort_column(tree, _col, False))
+        tree.pack(expand=True, fill=tk.BOTH)
+        return tree
+
+    def update_summ_tree(self, tree, data):
+        if data:
+            df = pd.DataFrame(data)
+            color="#"+("%06x"%np.random.randint(3375000,16000000))
+            # generating for loop to add new values to tree
+            for _, row in df.iterrows():
+                vals = list(map(int, row.tolist()))
+
+                # generating for loop to print values of dataframe in treeview column.
+                tree.insert('', 0, values=vals, tags=(color))
+                tree.tag_configure(color, background=color)
+
+            self.df_nodes = self.df_nodes.append(df, ignore_index=True)
+
     def create_analysis(self, master):
-        # tk.Label(master, text="Current Status:").pack(side=tk.TOP)
-        headers = ["Max AoD:", "Avg AoD:", "Nodes 100%:", "Nodes <50%"]
+        top_pane = ttk.PanedWindow(master, orient=tk.VERTICAL)
+        self.f_config = ttk.Labelframe(top_pane, text='Configurations')
+        # Show Configurations
+        self.display_data(self.f_config, list(self.configs.values()),
+                          list(self.configs.keys()))
+        top_pane.add(self.f_config)
+        top_pane.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        rnds = self.configs.get("num_rounds", 1)
+        bottom_pane = ttk.PanedWindow(top_pane, orient=tk.HORIZONTAL)
+        self.f_at_tx = ttk.Labelframe(bottom_pane, text=f'@ tx = {rnds}')
+        self.f_at_100 = ttk.Labelframe(bottom_pane, text='@ all AoD = 100%')
+        bottom_pane.add(self.f_at_tx, weight=35)
+        bottom_pane.add(self.f_at_100, weight=35)
+        top_pane.add(bottom_pane)
+
+        # Create Tx data
+        headers = ["Max AoD", "Avg AoD", "Nodes 100%", "Nodes <50%"]
         vals = [0 for _ in range(self.num_nodes)]
+        # Show data
+        self.display_data(self.f_at_tx, vals, headers)
+
         ranks = [(0, 0, 0, 0, 0) for _ in range(self.num_nodes)]
-        self.lbl_headers = tk.Label(master)
-        self.lbl_headers.config(
-            font='{Fira Sans} 12 {bold}', text=("\n".join(headers)))
-        self.lbl_headers.pack(side=tk.LEFT, pady=10, padx=5, fill=tk.BOTH)
+        self.update_analysis([vals, ranks, None])
 
-        self.lbl_vals = tk.Label(master)
-        self.lbl_vals.pack(side=tk.LEFT, pady=10, padx=5, fill=tk.BOTH)
-        self.update_analysis(vals, ranks, 0, 0)
-
-    def update_analysis(self, vals, ranks, r_num, r_xtra=0):
+    def update_analysis(self, data, r_curr=0, r_num=0, r_xtra=0):
+        vals, ranks, stats = data
         arr = np.array(vals)
         _ranks, *_ = zip(*ranks)
         self.avg_rank.append(mean(_ranks))
@@ -226,12 +302,12 @@ class Controller:
         h_dn = len(arr[arr <= 50]) if arr[arr <= 50].any() else 0
         values = [f"{arr.max():.2f}%", f"{arr.mean():.2f}%",
                   f"{f_dn}/{self.num_nodes}", f"{h_dn}/{self.num_nodes}"]
-        self.lbl_vals.config(font='{Fira Sans} 11', text=("\n".join(values)))
 
+        self.display_data(self.f_at_tx, values)
         self.update_graph(arr, r_num, self.aod_ax, self.aod_canvas)
-        self.update_ranks_graph(self.avg_rank, r_num, r_xtra,
+        self.update_ranks_graph(self.avg_rank, r_curr, r_num, r_xtra,
                                 self.ranks_ax, self.ranks_canvas)
-        # print(ranks)
+        self.update_summ_tree(self.summ_tree, stats)
 
     def update_graph(self, arr, round_no, ax, canvas):
         # Graphs update
@@ -246,7 +322,7 @@ class Controller:
         ax.bar(n_range, arr)
         canvas.draw()
 
-    def update_ranks_graph(self, arr, r_num, r_xtra, ax, canvas):
+    def update_ranks_graph(self, arr, r_current, r_num, r_xtra, ax, canvas):
         round_no = r_num + r_xtra
         x_range = np.arange(0, round_no+1)
         # Graphs update
@@ -264,19 +340,62 @@ class Controller:
         # Add horizontal lines
         ax.axhline(self.num_nodes, label="max rank", ls='--', color='r')
         # Add a vertical lines
-        if r_xtra:
-            ax.axvline(r_num, label=f"tx = {r_num}", ls=':', color='r')
-            ax.axhline(np.interp(r_num, x_range[:-1], arr),
+        if r_num and r_current >= r_num:
+            ax.axvline(r_num-1, label=f"tx = {r_num}", ls=':', color='r')
+            ax.axhline(np.interp(r_num-1, x_range[:-1], arr),
                        label=f"rank @ tx {r_num}", ls='--', color='gray')
         if self.num_nodes in arr:
             index = np.searchsorted(arr, self.num_nodes)
             ax.axvline(index, label="full AoD", ls='--', color='g')
-        ax.legend(loc='upper left')
-        canvas.draw()
-        # print("done")
+            self.show_full_aod_stats(arr, r_current)
 
-    def clear_rank(self):
+        ax.legend(loc='lower right')
+        canvas.draw()
+
+    def show_full_aod_stats(self, data, r_curr):
+        # check if frame is empty
+        if self.f_at_100.winfo_children():
+            return False
+
+        # Create header
+        headers = ["Num of rounds:", "Expected rounds",
+                   "Failure ratio:", "Collision ratio:", "Total packetloss"]
+        # prepare data
+        rnds = self.configs.get("num_rounds", 0)
+        values = [f"{r_curr}", f"{rnds}",
+                  f"10%", f"10%", f"20%"]
+        # display values
+        self.display_data(self.f_at_100, values, headers)
+
+    def treeview_sort_column(self, tv, col, reverse):
+        l = [(int(tv.set(k, col)), k) for k in tv.get_children('')]
+        l.sort(reverse=reverse)
+
+        # rearrange items in sorted positions
+        for index, (val, k) in enumerate(l):
+            tv.move(k, '', index)
+
+        # reverse sort next time
+        tv.heading(col, command=lambda _col=col: \
+                    self.treeview_sort_column(tv, _col, not reverse))
+
+    def new_generation_cleanup(self, clear_frames=True):
+        # Clean up
         self.avg_rank = []
+
+        # Clear dataframe
+        self.df_nodes = pd.DataFrame(columns=self.summ_header)
+
+        # clear frames
+        if clear_frames:
+            frames = [self.f_at_100, self.summ_frame]
+            for frame in frames:
+                # destroy all widgets from frame
+                for widget in frame.winfo_children():
+                    widget.destroy()
+        
+        # create clean frame
+        self.summ_tree = self.create_summ_tree(self.summ_frame)
 
     def create_controller(self):
         # Radio buttons

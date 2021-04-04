@@ -76,20 +76,25 @@ EXP_ID = int(CFG_SIM.get('id', 0))
 # create loggers
 trace = logging.getLogger('trace')
 kpi = logging.getLogger('kpi')
+kodo_log = logging.getLogger('kodo')
 
 # add a file handler
 log_fh = logging.FileHandler(
     f'{LOG_PATH}/{TOPOLOGY_TYPE}_{NUM_OF_NODES}_{EXP_NAME}_{EXP_ID}.log', 'w+')
 kpi_fh = logging.FileHandler(
     f'{LOG_PATH}/{TOPOLOGY_TYPE}_{NUM_OF_NODES}_{EXP_NAME}_{EXP_ID}.csv', 'w+')
-
+kodo_fh = logging.FileHandler(
+    f'{LOG_PATH}/{TOPOLOGY_TYPE}_{NUM_OF_NODES}_{EXP_NAME}_{EXP_ID}.txt', 'w+')
 # create a formatter and set the formatter for the handler.
 log_frmt = logging.Formatter('%(asctime)s:%(levelname)-10s: %(funcName)-16s: %(message)s',
                              datefmt="%Y-%m-%d %H.%M.%S")
 kpi_frmt = logging.Formatter('%(asctime)s,%(msecs)-3d,%(funcName)-17s,%(message)s',
                              datefmt="%Y-%m-%d %H:%M:%S")
+kodo_frmt = logging.Formatter('%(asctime)s  %(funcName)-17s\n%(message)s',
+                             datefmt="%Y-%m-%d %H:%M:%S")
 log_fh.setFormatter(log_frmt)
 kpi_fh.setFormatter(kpi_frmt)
+kodo_fh.setFormatter(kodo_frmt)
 
 
 def fmt_filter(record):
@@ -103,17 +108,15 @@ trace.setLevel(logging.DEBUG)
 trace.addFilter(fmt_filter)
 kpi.addHandler(kpi_fh)
 kpi.setLevel(logging.DEBUG)
+kodo_log.addHandler(kodo_fh)
+kodo_log.setLevel(logging.DEBUG)
 
 # For Generations
 GENERATIONS = int(CFG_PARAM.get("generations_num", '5'))
-T_g = int(CFG_PARAM.get("generation_time_ms", '1000'))
-T_a = int(CFG_PARAM.get("action_time_ms", '40'))
-ROUNDS = int(T_g/T_a)
+GEN_TIME = int(CFG_PARAM.get("generation_time_ms", '1000'))
+ACT_TIME = int(CFG_PARAM.get("action_time_ms", '40'))
+ROUNDS = int(GEN_TIME/ACT_TIME)
 EXTRA_RNDS = 0
-
-# Pesudo random seed
-np.random.seed(SEED_VALUE)
-
 
 class NCSim:
     def __init__(self):
@@ -135,10 +138,10 @@ class NCSim:
             fun=self.mclick.left_click, btn=1, add=True)
         # attach left click
         self.screen.set_click_listener(fun=self.mclick.popup, btn=3, add=True)
-
+        summ_header = [*self.nodes[0].get_statistics(0)]
         # Init controller window
-        self.ctrl = Controller(self.screen.root, NUM_OF_NODES)
-
+        self.ctrl = Controller(self.screen.root, summ_header, **self.get_configs())
+        cde.set_logger(kodo_log)
         print("init done")
 
     def create_nodes(self):
@@ -360,6 +363,8 @@ class NCSim:
 
             # broadcast the message
             cde.node_broadcast(node, node.get_neighbors(), r, logger=kpi)
+            # update tx counter
+            node.update_tx_counter()
             self.screen.clear_send_packets()
 
     def rx_phase(self, r):
@@ -386,9 +391,6 @@ class NCSim:
         # Transmit
         self.tx_phase(r)
 
-        # TODO remove this delay
-        # time.sleep(0.1)
-
         # Receiving PHASE
         # logging:
         log_msg = f"Generation {g}/{GENERATIONS} round {r}/{ROUNDS}, Receiving phase"
@@ -398,9 +400,6 @@ class NCSim:
         self.screen.screen_refresh()
         # Receiving
         self.rx_phase(r)
-
-        # TODO remove this delay
-        # time.sleep(0.1)
 
         # Collect data of the round
         self.end_round(r)
@@ -421,8 +420,10 @@ class NCSim:
         trace.info(f"generation {g} begin")
         print("\nGeneration {} \n".format(g))
         # clean up before new generation
-        self.ctrl.clear_rank()
+        self.ctrl.new_generation_cleanup()
         cde.clean_up_all()
+        [n.clear_counters() for n in self.nodes]
+
         # Generate new data
         cde.generate_data()
 
@@ -435,8 +436,8 @@ class NCSim:
         # calculate data for the round
         aods = cde.calculate_aod(round_num, logger=kpi)
         ranks = [cde.get_ranks(n.node_id) for n in self.nodes]
-        [n.print_aod_percentage(aods[i]) for i, n in enumerate(self.nodes)]
-        self.ctrl.update_analysis(aods, ranks, ROUNDS, EXTRA_RNDS)
+        stats = [n.print_aod_percentage(round_num, aods[i], ranks[i]) for i, n in enumerate(self.nodes)]
+        self.ctrl.update_analysis([aods, ranks, stats], round_num, ROUNDS, EXTRA_RNDS)
         print(f"end round {round_num}")
 
     def end_generation(self):
@@ -501,6 +502,21 @@ class NCSim:
 
     def end_keep_open(self):
         self.screen.mainloop()
+
+    def get_configs(self):
+        return {
+            "num_nodes": NUM_OF_NODES,
+            "num_rounds": ROUNDS,
+            "seed_value": SEED_VALUE,
+            "generation_time_ms": GEN_TIME,
+            "action_time_ms": ACT_TIME,
+            "topology": TOPOLOGY_TYPE,
+            "packet_size_bytes": PACKET_SIZE,
+            "finite_field": FINITE_FIELD,
+            "packet_loss_percent": PACKET_LOSS,
+            "channels": CHANNEL_NUM,
+            "timeslots": TIMESLOT_NUM
+        }
 
 
 if __name__ == "__main__":
