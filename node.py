@@ -181,8 +181,8 @@ class Node(Turtle):
             "missing": self.missing,           
             "tx_total": self.tx_count, 
             "rx_total": self.total_rx_count,
-            "rx_successful": self.success_rx_count, 
-            "collisions": self.collision_count, 
-            "ignored_msgs_count": self.ig_msgs_count,
-            "FSPL_%": self.packet_loss_count
+            "rx_success": self.success_rx_count, 
+            "rx_collisions": self.collision_count, 
+            "rx_ignored": self.ig_msgs_count,
+            "rx_FSPL": self.packet_loss_count
         }

@@ -193,4 +193,10 @@ class NCSimVisualizer:
         onscreenclick(**kwarg)
 
     def mainloop(self):
-        self.screen.mainloop()
+        while True:
+            try:
+                self.root.update()
+                self.root.update_idletasks()
+            except:
+                print("bye")
+                break

@@ -189,7 +189,7 @@ class Controller:
         n.add(self.stat_frame, text='Statistics')
         n.add(self.aod_grph_frame, text='AoD Graph')
         n.add(self.ranks_grph_frame, text='Ranks Graph')
-        n.add(self.summ_frame, text='Summary')
+        n.add(self.summ_frame, text='KPIs')
         n.pack(fill=tk.BOTH, expand=1)
 
         self.new_generation_cleanup(clear_frames=False)
@@ -234,12 +234,13 @@ class Controller:
         # taking all the columns heading in a variable "df_col".
         df = self.df_nodes
         df_col = df.columns.values
-        
+
         # create scrollbar
         scroll = ttk.Scrollbar(root)
         scroll.pack(side=tk.RIGHT, fill=tk.Y)
         # create treeview
-        tree = ttk.Treeview(root, show='headings', height=7, yscrollcommand=scroll.set)
+        tree = ttk.Treeview(root, show='headings', height=7,
+                            yscrollcommand=scroll.set)
         scroll.config(command=tree.yview)
         # all the column name are generated dynamically.
         tree['columns'] = (df_col)
@@ -247,15 +248,15 @@ class Controller:
         # generating for loop to create columns and give heading to them through df_col var.
         for col, x in enumerate(df_col):
             tree.column(col, width=50, anchor='e')
-            tree.heading(col, text=x.replace('_', ' '), command=lambda _col=col: \
-                     self.treeview_sort_column(tree, _col, False))
+            tree.heading(col, text=x.replace('_', ' '), command=lambda _col=col:
+                         self.treeview_sort_column(tree, _col, False))
         tree.pack(expand=True, fill=tk.BOTH)
         return tree
 
     def update_summ_tree(self, tree, data):
         if data:
             df = pd.DataFrame(data)
-            color="#"+("%06x"%np.random.randint(3375000,16000000))
+            color = "#"+("%06x" % np.random.randint(3375000, 16000000))
             # generating for loop to add new values to tree
             for _, row in df.iterrows():
                 vals = list(map(int, row.tolist()))
@@ -267,21 +268,33 @@ class Controller:
             self.df_nodes = self.df_nodes.append(df, ignore_index=True)
 
     def create_analysis(self, master):
-        top_pane = ttk.PanedWindow(master, orient=tk.VERTICAL)
+        # Create paned windows
+        all_pane = ttk.PanedWindow(master, orient=tk.VERTICAL)
+        top_pane = ttk.PanedWindow(all_pane, orient=tk.HORIZONTAL)
+        bottom_pane = ttk.PanedWindow(all_pane, orient=tk.HORIZONTAL)
+
+        # Create top labelframes
         self.f_config = ttk.Labelframe(top_pane, text='Configurations')
-        # Show Configurations
+        self.f_current = ttk.Labelframe(top_pane, text='Current run')
+
+        # Show Configurations to reserve size
         self.display_data(self.f_config, list(self.configs.values()),
                           list(self.configs.keys()))
-        top_pane.add(self.f_config)
-        top_pane.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        top_pane.add(self.f_config, weight=20)
+        top_pane.add(self.f_current, weight=52)
+        # top_pane.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
+        # Create bottom pane
         rnds = self.configs.get("num_rounds", 1)
-        bottom_pane = ttk.PanedWindow(top_pane, orient=tk.HORIZONTAL)
         self.f_at_tx = ttk.Labelframe(bottom_pane, text=f'@ tx = {rnds}')
         self.f_at_100 = ttk.Labelframe(bottom_pane, text='@ all AoD = 100%')
-        bottom_pane.add(self.f_at_tx, weight=35)
-        bottom_pane.add(self.f_at_100, weight=35)
-        top_pane.add(bottom_pane)
+        bottom_pane.add(self.f_at_tx, weight=20)
+        bottom_pane.add(self.f_at_100, weight=31)
+        
+        # add panes to all_pane
+        all_pane.add(top_pane)
+        all_pane.add(bottom_pane)
+        all_pane.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
         # Create Tx data
         headers = ["Max AoD", "Avg AoD", "Nodes 100%", "Nodes <50%"]
@@ -290,9 +303,12 @@ class Controller:
         self.display_data(self.f_at_tx, vals, headers)
 
         ranks = [(0, 0, 0, 0, 0) for _ in range(self.num_nodes)]
-        self.update_analysis([vals, ranks, None])
+        stats = None
+        self.data = [vals, ranks, stats]
+        self.update_analysis(self.data)
 
     def update_analysis(self, data, r_curr=0, r_num=0, r_xtra=0):
+        self.data = data
         vals, ranks, stats = data
         arr = np.array(vals)
         _ranks, *_ = zip(*ranks)
@@ -304,10 +320,10 @@ class Controller:
                   f"{f_dn}/{self.num_nodes}", f"{h_dn}/{self.num_nodes}"]
 
         self.display_data(self.f_at_tx, values)
+        self.update_summ_tree(self.summ_tree, stats)
         self.update_graph(arr, r_num, self.aod_ax, self.aod_canvas)
         self.update_ranks_graph(self.avg_rank, r_curr, r_num, r_xtra,
                                 self.ranks_ax, self.ranks_canvas)
-        self.update_summ_tree(self.summ_tree, stats)
 
     def update_graph(self, arr, round_no, ax, canvas):
         # Graphs update
@@ -330,7 +346,6 @@ class Controller:
         ax.plot(arr)
         ax.set_title(f'Avg {self.num_nodes} decoder ranks vs num of tx')
         ax.set_xlabel(f'Num of {round_no} txs')
-        ax.set_xlim(0, round_no)
         ax.set_xticks(x_range)
         ax.set_ylabel('Avg decoders rank')
         # set the ylim to bottom, top
@@ -347,23 +362,30 @@ class Controller:
         if self.num_nodes in arr:
             index = np.searchsorted(arr, self.num_nodes)
             ax.axvline(index, label="full AoD", ls='--', color='g')
-            self.show_full_aod_stats(arr, r_current)
+            self.show_full_aod_stats(r_current)
 
         ax.legend(loc='lower right')
         canvas.draw()
 
-    def show_full_aod_stats(self, data, r_curr):
+    def show_full_aod_stats(self, r_curr):
         # check if frame is empty
         if self.f_at_100.winfo_children():
             return False
-
         # Create header
-        headers = ["Num of rounds:", "Expected rounds",
-                   "Failure ratio:", "Collision ratio:", "Total packetloss"]
+        headers = ["Num of rounds:", "Expected rounds", "Reception ratio:",
+                   "Collision ratio:", "Ignored msgs ratio", "Pathloss ratio"]
         # prepare data
         rnds = self.configs.get("num_rounds", 0)
-        values = [f"{r_curr}", f"{rnds}",
-                  f"10%", f"10%", f"20%"]
+        df = self.df_nodes.query(f" round == {r_curr}")
+
+        # Collision ratio
+        reception_ratio = df['rx_success'].sum() / df['rx_total'].sum() * 100
+        collision_ratio = df['rx_collisions'].sum() / df['rx_total'].sum() * 100
+        ignored_ratio = df['rx_ignored'].sum() / df['rx_total'].sum() * 100
+        pathloss_ratio = df['rx_FSPL'].sum() / df['rx_total'].sum() * 100
+
+        values = [f"{r_curr}", f"{rnds}", f"{reception_ratio:.2f}%",
+                  f"{collision_ratio:.2f}%", f"{ignored_ratio:.2f}%", f"{pathloss_ratio: .2f}%"]
         # display values
         self.display_data(self.f_at_100, values, headers)
 
@@ -376,8 +398,8 @@ class Controller:
             tv.move(k, '', index)
 
         # reverse sort next time
-        tv.heading(col, command=lambda _col=col: \
-                    self.treeview_sort_column(tv, _col, not reverse))
+        tv.heading(col, command=lambda _col=col:
+                   self.treeview_sort_column(tv, _col, not reverse))
 
     def new_generation_cleanup(self, clear_frames=True):
         # Clean up
@@ -393,7 +415,7 @@ class Controller:
                 # destroy all widgets from frame
                 for widget in frame.winfo_children():
                     widget.destroy()
-        
+
         # create clean frame
         self.summ_tree = self.create_summ_tree(self.summ_frame)
 
@@ -460,7 +482,7 @@ class Controller:
         self.btn_to_full.pack()
 
         btn_ext = tk.Button(self.ctrlr, text="Exit app", width=15,
-                            command=self.root.destroy)
+                            command=self.close_window)
         btn_ext.pack()
 
     def dis_btns(self, dis_all=False):
@@ -499,3 +521,10 @@ class Controller:
 
     def get_xtr_btns(self):
         return [self.btn_xtr_gen, self.btn_xtr_rnd, self.btn_to_full]
+
+    def close_window(self):
+        try:
+            self.root.destroy()
+            self.root.quit()
+        except:
+            print("bye bye")
