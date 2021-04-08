@@ -287,10 +287,11 @@ class Controller:
         # Create bottom pane
         rnds = self.configs.get("num_rounds", 1)
         self.f_at_tx = ttk.Labelframe(bottom_pane, text=f'@ tx = {rnds}')
-        self.f_at_100 = ttk.Labelframe(bottom_pane, text='@ all AoD = 100%')
+        self.f_at_100 = ttk.Labelframe(
+            bottom_pane, text='@ all nodes 100% AoD')
         bottom_pane.add(self.f_at_tx, weight=20)
         bottom_pane.add(self.f_at_100, weight=31)
-        
+
         # add panes to all_pane
         all_pane.add(top_pane)
         all_pane.add(bottom_pane)
@@ -302,7 +303,7 @@ class Controller:
         # Show data
         self.display_data(self.f_at_tx, vals, headers)
 
-        ranks = [(0, 0, 0, 0, 0) for _ in range(self.num_nodes)]
+        ranks = [(1, 1, 1, 1, 1) for _ in range(self.num_nodes)]
         stats = None
         self.data = [vals, ranks, stats]
         self.update_analysis(self.data)
@@ -343,7 +344,7 @@ class Controller:
         x_range = np.arange(0, round_no+1)
         # Graphs update
         ax.clear()         # clear axes from previous plot
-        ax.plot(arr)
+        ax.plot([1, *arr])
         ax.set_title(f'Avg {self.num_nodes} decoder ranks vs num of tx')
         ax.set_xlabel(f'Num of {round_no} txs')
         ax.set_xticks(x_range)
@@ -356,7 +357,7 @@ class Controller:
         ax.axhline(self.num_nodes, label="max rank", ls='--', color='r')
         # Add a vertical lines
         if r_num and r_current >= r_num:
-            ax.axvline(r_num-1, label=f"tx = {r_num}", ls=':', color='r')
+            ax.axvline(r_num, label=f"tx = {r_num}", ls=':', color='r')
             ax.axhline(np.interp(r_num-1, x_range[:-1], arr),
                        label=f"rank @ tx {r_num}", ls='--', color='gray')
         if self.num_nodes in arr:
@@ -380,7 +381,8 @@ class Controller:
 
         # Collision ratio
         reception_ratio = df['rx_success'].sum() / df['rx_total'].sum() * 100
-        collision_ratio = df['rx_collisions'].sum() / df['rx_total'].sum() * 100
+        collision_ratio = df['rx_collisions'].sum() / \
+            df['rx_total'].sum() * 100
         ignored_ratio = df['rx_ignored'].sum() / df['rx_total'].sum() * 100
         pathloss_ratio = df['rx_FSPL'].sum() / df['rx_total'].sum() * 100
 

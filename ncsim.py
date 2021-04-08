@@ -91,7 +91,7 @@ log_frmt = logging.Formatter('%(asctime)s:%(levelname)-10s: %(funcName)-16s: %(m
 kpi_frmt = logging.Formatter('%(asctime)s,%(msecs)-3d,%(funcName)-17s,%(message)s',
                              datefmt="%Y-%m-%d %H:%M:%S")
 kodo_frmt = logging.Formatter('%(asctime)s  %(funcName)-17s\n%(message)s',
-                             datefmt="%Y-%m-%d %H:%M:%S")
+                              datefmt="%Y-%m-%d %H:%M:%S")
 log_fh.setFormatter(log_frmt)
 kpi_fh.setFormatter(kpi_frmt)
 kodo_fh.setFormatter(kodo_frmt)
@@ -118,6 +118,7 @@ ACT_TIME = int(CFG_PARAM.get("action_time_ms", '40'))
 ROUNDS = int(GEN_TIME/ACT_TIME)
 EXTRA_RNDS = 0
 
+
 class NCSim:
     def __init__(self):
         # Call to NCSimVisualizer create Screen
@@ -140,7 +141,8 @@ class NCSim:
         self.screen.set_click_listener(fun=self.mclick.popup, btn=3, add=True)
         summ_header = [*self.nodes[0].get_statistics(0)]
         # Init controller window
-        self.ctrl = Controller(self.screen.root, summ_header, **self.get_configs())
+        self.ctrl = Controller(
+            self.screen.root, summ_header, **self.get_configs())
         cde.set_logger(kodo_log)
         print("init done")
 
@@ -206,43 +208,72 @@ class NCSim:
             LOW_VALUE = 0
             HIGH_VALUE = 1
 
-            # IF THERE ARE NODES AWAY ADJUST FACTOR DECREASE IT
-            FACTOR = 1.25
-            # Set the Quarter Size
-            quarter_size = int(NODE_COVERAGE*FACTOR)
-            # Set the Quarter Areas in list Variable, X and Y Lower and Higher values
-            quarters_areas = [{"X_RANGE": [-quarter_size, 0],
-                               "Y_RANGE": [0, quarter_size]},      # Q1
-                              {"X_RANGE": [0, quarter_size],
-                               "Y_RANGE": [0, quarter_size]},      # Q2
-                              {"X_RANGE": [-quarter_size, 0],
-                               "Y_RANGE": [-quarter_size, 0]},     # Q3
-                              {"X_RANGE": [0, quarter_size],
-                               "Y_RANGE": [-quarter_size, 0]}]     # Q4
-            # Loop over the Nodes and Set Positions
-            for index, node in enumerate(self.nodes):
-                success = False
-                while not success:
-                    success = True
-                    # Randomly Set the Node X Position, in specific Quarter
-                    x_position = np.random.randint(
-                        quarters_areas[index % 4]["X_RANGE"][LOW_VALUE],
-                        quarters_areas[index % 4]["X_RANGE"][HIGH_VALUE])
-                    # Randomly Set the Node Y Position, in specific Quarter
-                    y_position = np.random.randint(
-                        quarters_areas[index % 4]["Y_RANGE"][LOW_VALUE],
-                        quarters_areas[index % 4]["Y_RANGE"][HIGH_VALUE])
-                    # Locate Node where Cursor Stops
-                    node.place_node((x_position, y_position))
-                    # Check if there is overlapping nodes
-                    for neighbor in self.nodes:
-                        # Check until reaching node index
-                        if neighbor == node:
-                            break
-                        if node.distance(neighbor) < MIN_DIST_NODES:
+            # divids the screen to 4 quarters
+            def create_quarters(mutate=0):
+                # for the linear equation
+                a = 0.03 + mutate
+                b = 0.55
+
+                # Create linear equation for mapping num of nodes
+                # 5   nodes -> 0.7
+                # 100 nodes -> 3.5
+
+                FACTOR = a * NUM_OF_NODES + b
+                # Set the Quarter Size
+                quarter_size = int(NODE_COVERAGE*FACTOR)
+                # Set the Quarter Areas in list Variable, X and Y Lower and Higher values
+                return [{"X_RANGE": [-quarter_size, 0],
+                         "Y_RANGE": [0, quarter_size]},      # Q1
+                        {"X_RANGE": [0, quarter_size],
+                         "Y_RANGE": [0, quarter_size]},      # Q2
+                        {"X_RANGE": [-quarter_size, 0],
+                         "Y_RANGE": [-quarter_size, 0]},     # Q3
+                        {"X_RANGE": [0, quarter_size],
+                         "Y_RANGE": [-quarter_size, 0]}]     # Q4
+
+            # distributes the nodes inside the 4 quarters
+            def distribute_nodes(quarters_areas):
+                # Loop over the Nodes and Set Positions
+                for index, node in enumerate(self.nodes):
+                    success = False
+                    counter = 0
+                    while not success:
+                        success = True
+                        counter = counter + 1
+                        # Randomly Set the Node X Position, in specific Quarter
+                        x_position = np.random.randint(
+                            quarters_areas[index % 4]["X_RANGE"][LOW_VALUE],
+                            quarters_areas[index % 4]["X_RANGE"][HIGH_VALUE])
+                        # Randomly Set the Node Y Position, in specific Quarter
+                        y_position = np.random.randint(
+                            quarters_areas[index % 4]["Y_RANGE"][LOW_VALUE],
+                            quarters_areas[index % 4]["Y_RANGE"][HIGH_VALUE])
+                        # Locate Node where Cursor Stops
+                        node.place_node((x_position, y_position))
+                        # Check if there is overlapping nodes
+                        for neighbor in self.nodes:
+                            # Check until reaching node index
+                            if neighbor == node:
+                                break
+                            if node.distance(neighbor) < MIN_DIST_NODES:
+                                trace.warning(
+                                    f"node {node.node_id} was overlapping node {neighbor.node_id}")
+                                success = False
+                        if counter == 1000:
                             trace.warning(
-                                f"node {node.node_id} was overlapping node {neighbor.node_id}")
-                            success = False
+                                f"failed to create topology")
+                            return False
+                return True
+
+            # Try to place the nodes correctly
+            done = False
+            # for mutations if distribution failed
+            c = 0
+            # try until successful
+            while not done:
+                Q_s = create_quarters(c)
+                c = c + 0.01
+                done = distribute_nodes(Q_s)
 
         # IF HYBRID TOPOLOGY
         elif topology == "hybrid":
@@ -436,8 +467,10 @@ class NCSim:
         # calculate data for the round
         aods = cde.calculate_aod(round_num, logger=kpi)
         ranks = [cde.get_ranks(n.node_id) for n in self.nodes]
-        stats = [n.print_aod_percentage(round_num, aods[i], ranks[i]) for i, n in enumerate(self.nodes)]
-        self.ctrl.update_analysis([aods, ranks, stats], round_num, ROUNDS, EXTRA_RNDS)
+        stats = [n.print_aod_percentage(
+            round_num, aods[i], ranks[i]) for i, n in enumerate(self.nodes)]
+        self.ctrl.update_analysis(
+            [aods, ranks, stats], round_num, ROUNDS, EXTRA_RNDS)
         print(f"end round {round_num}")
 
     def end_generation(self):

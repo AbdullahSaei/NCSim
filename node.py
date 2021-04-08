@@ -184,5 +184,5 @@ class Node(Turtle):
             "rx_success": self.success_rx_count, 
             "rx_collisions": self.collision_count, 
             "rx_ignored": self.ig_msgs_count,
-            "rx_FSPL": self.packet_loss_count
+            "rx_SINR_loss": self.packet_loss_count
         }
