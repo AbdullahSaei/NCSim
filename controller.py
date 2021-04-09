@@ -297,36 +297,51 @@ class Controller:
         all_pane.add(bottom_pane)
         all_pane.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-        # Create Tx data
-        headers = ["Max AoD", "Avg AoD", "Nodes 100%", "Nodes <50%"]
+        # Create Header and Tx data
+        headers_current = ["Round", "Avg Ranks", "Avg AoD",
+                           "Max AoD", "Nodes 100%", "Nodes <50%"]
         vals = [0 for _ in range(self.num_nodes)]
-        # Show data
-        self.display_data(self.f_at_tx, vals, headers)
-
         ranks = [(1, 1, 1, 1, 1) for _ in range(self.num_nodes)]
         stats = None
         self.data = [vals, ranks, stats]
+        # Show data
+        self.display_data(self.f_current, vals, headers_current)
         self.update_analysis(self.data)
 
     def update_analysis(self, data, r_curr=0, r_num=0, r_xtra=0):
         self.data = data
+        # Extract data
         vals, ranks, stats = data
+
+        # prepare data
         arr = np.array(vals)
         _ranks, *_ = zip(*ranks)
-        self.avg_rank.append(mean(_ranks))
+        avg_ranks = mean(_ranks)
+        self.avg_rank.append(avg_ranks)
 
+        # Calculate full done and half done nodes
         f_dn = len(arr[arr == 100]) if arr[arr == 100].any() else 0
         h_dn = len(arr[arr <= 50]) if arr[arr <= 50].any() else 0
-        values = [f"{arr.max():.2f}%", f"{arr.mean():.2f}%",
-                  f"{f_dn}/{self.num_nodes}", f"{h_dn}/{self.num_nodes}"]
 
-        self.display_data(self.f_at_tx, values)
+        # headers_current = ["Round", "Avg Ranks",
+        # "Max AoD", "Avg AoD", "Nodes 100%", "Nodes <50%"]
+        run_values = [f"{r_curr}/{r_num}", f"{avg_ranks:.2f}/{self.num_nodes}", 
+                      f"{arr.mean():.2f}%", f"{arr.max():.2f}%", 
+                      f"{f_dn}/{self.num_nodes}", f"{h_dn}/{self.num_nodes}"]
+        self.display_data(self.f_current, run_values)
+
+        # Show message if it is the specified round
+        if r_curr and not r_xtra and r_curr == r_num:
+            headers = ["Avg Ranks", "Avg AoD", "Max AoD", "Nodes 100%", "Nodes <50%"]
+            self.display_data(self.f_at_tx, run_values[1:], headers)
+
+        # update other GUIs
         self.update_summ_tree(self.summ_tree, stats)
-        self.update_graph(arr, r_num, self.aod_ax, self.aod_canvas)
+        self.update_hist_graph(arr, r_num, self.aod_ax, self.aod_canvas)
         self.update_ranks_graph(self.avg_rank, r_curr, r_num, r_xtra,
                                 self.ranks_ax, self.ranks_canvas)
 
-    def update_graph(self, arr, round_no, ax, canvas):
+    def update_hist_graph(self, arr, round_no, ax, canvas):
         # Graphs update
         n_range = [*range(self.num_nodes)]
         ax.clear()         # clear axes from previous plot
@@ -372,22 +387,24 @@ class Controller:
         # check if frame is empty
         if self.f_at_100.winfo_children():
             return False
-        # Create header
-        headers = ["Num of rounds:", "Expected rounds", "Reception ratio:",
-                   "Collision ratio:", "Ignored msgs ratio", "Pathloss ratio"]
         # prepare data
         rnds = self.configs.get("num_rounds", 0)
         df = self.df_nodes.query(f" round == {r_curr}")
 
-        # Collision ratio
+        # Calculate ratio
         reception_ratio = df['rx_success'].sum() / df['rx_total'].sum() * 100
         collision_ratio = df['rx_collisions'].sum() / \
             df['rx_total'].sum() * 100
         ignored_ratio = df['rx_ignored'].sum() / df['rx_total'].sum() * 100
-        pathloss_ratio = df['rx_FSPL'].sum() / df['rx_total'].sum() * 100
+        pathloss_ratio = df['rx_SINR_loss'].sum() / df['rx_total'].sum() * 100
 
+        # Create header
+        headers = ["Num of rounds", "Expected rounds", "Reception success %",
+                   "Collision %", "Ignored msgs %", "Pathloss %"]
+        # Values format
         values = [f"{r_curr}", f"{rnds}", f"{reception_ratio:.2f}%",
                   f"{collision_ratio:.2f}%", f"{ignored_ratio:.2f}%", f"{pathloss_ratio: .2f}%"]
+
         # display values
         self.display_data(self.f_at_100, values, headers)
 
@@ -412,7 +429,7 @@ class Controller:
 
         # clear frames
         if clear_frames:
-            frames = [self.f_at_100, self.summ_frame]
+            frames = [self.f_at_100, self.summ_frame, self.f_at_tx]
             for frame in frames:
                 # destroy all widgets from frame
                 for widget in frame.winfo_children():

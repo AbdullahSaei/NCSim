@@ -435,10 +435,11 @@ class NCSim:
         # Collect data of the round
         self.end_round(r)
 
-    def run_gen(self, g):
-
+    def run_gen(self, g, xtra=False):
+        # LOGGING:
+        self.screen.visual_output_msg(f"New generation {g}")
         # wait between generations
-        while self.ctrl.is_continuous_run() > 0:
+        while not xtra and self.ctrl.is_continuous_run() > 0:
             self.screen.root.update()
             self.screen.root.update_idletasks()
             if self.ctrl.is_nxt_clicked():
@@ -516,7 +517,7 @@ class NCSim:
         global EXTRA_RNDS
         GENERATIONS = GENERATIONS + 1
         EXTRA_RNDS = 0
-        self.run_gen(GENERATIONS)
+        self.run_gen(GENERATIONS, True)
 
     def extra_rnd(self):
         global EXTRA_RNDS
@@ -530,6 +531,9 @@ class NCSim:
             self.extra_rnd()
             counter = counter + 1
             if counter == 100:
+                # LOGGING:
+                self.screen.visual_output_msg(
+                                f"TIMEOUT 100 runs!!!")
                 trace.error('TIMEOUT!!')
                 break
 
