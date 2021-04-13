@@ -299,7 +299,7 @@ class Controller:
 
         # Create Header and Tx data
         headers_current = ["Round", "Avg Ranks", "Avg AoD",
-                           "Max AoD", "Nodes 100%", "Nodes <50%"]
+                           "Max AoD", "Min AoD", "Nodes 100%", "Nodes <50%"]
         vals = [0 for _ in range(self.num_nodes)]
         ranks = [(1, 1, 1, 1, 1) for _ in range(self.num_nodes)]
         stats = None
@@ -325,14 +325,15 @@ class Controller:
 
         # headers_current = ["Round", "Avg Ranks",
         # "Max AoD", "Avg AoD", "Nodes 100%", "Nodes <50%"]
-        run_values = [f"{r_curr}/{r_num}", f"{avg_ranks:.2f}/{self.num_nodes}", 
-                      f"{arr.mean():.2f}%", f"{arr.max():.2f}%", 
+        run_values = [f"{r_curr}/{r_num}", f"{avg_ranks:.2f}/{self.num_nodes}",
+                      f"{arr.mean():.2f}%", f"{arr.max():.2f}%", f"{arr.min():.2f}%",
                       f"{f_dn}/{self.num_nodes}", f"{h_dn}/{self.num_nodes}"]
         self.display_data(self.f_current, run_values)
 
         # Show message if it is the specified round
         if r_curr and not r_xtra and r_curr == r_num:
-            headers = ["Avg Ranks", "Avg AoD", "Max AoD", "Nodes 100%", "Nodes <50%"]
+            headers = ["Avg Ranks", "Avg AoD", "Max AoD",
+                       "Min AoD", "Nodes 100%", "Nodes <50%"]
             self.display_data(self.f_at_tx, run_values[1:], headers)
 
         # update other GUIs
@@ -360,10 +361,10 @@ class Controller:
         # Graphs update
         ax.clear()         # clear axes from previous plot
         ax.plot([1, *arr])
-        ax.set_title(f'Avg {self.num_nodes} decoder ranks vs num of tx')
-        ax.set_xlabel(f'Num of {round_no} txs')
+        ax.set_title(f'Average ranks of {self.num_nodes} decoders Vs num of transmissions')
+        ax.set_xlabel(f'Num of transmissions {r_current}')
         ax.set_xticks(x_range)
-        ax.set_ylabel('Avg decoders rank')
+        ax.set_ylabel('Avg ranks of decoders')
         # set the ylim to bottom, top
         ax.set_yticks(np.arange(self.num_nodes+1))
         ax.margins(x=0)
@@ -377,7 +378,7 @@ class Controller:
                        label=f"rank @ tx {r_num}", ls='--', color='gray')
         if self.num_nodes in arr:
             index = np.searchsorted(arr, self.num_nodes)
-            ax.axvline(index, label="full AoD", ls='--', color='g')
+            ax.axvline(index+1, label="full AoD", ls='--', color='g')
             self.show_full_aod_stats(r_current)
 
         ax.legend(loc='lower right')
