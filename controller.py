@@ -445,7 +445,10 @@ class Controller:
         tk.Label(self.ctrlr, text='methods:', anchor='w').pack(pady=(10, 0))
         # Radio variable
         self.cont_run = tk.IntVar()
-        self.cont_run.set(3)
+        if not self.configs.get("auto_run"):
+            self.cont_run.set(3)
+        else:
+            self.cont_run.set(0)
         self.R1 = tk.Radiobutton(self.ctrlr, text="Run all",
                                  variable=self.cont_run, value=0,
                                  command=self.dis_btns)

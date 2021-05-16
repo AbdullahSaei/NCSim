@@ -8,6 +8,7 @@ import time
 import numpy as np
 import logging
 import cde
+import re
 
 try:
     # Open the NCSim Config Json file
@@ -36,6 +37,7 @@ MESSAGE_MARGIN = int(CFG_SIM.get('message_margin', 100))
 SCREEN_BGCOLOR = CFG_SIM.get('screen_bgcolor', 'black')
 SCREEN_REFRESH_TIME = int(CFG_SIM.get("screen_refresh_time", 0.1))
 SCREEN_TITLE = CFG_SIM.get('screen_title', 'Network Coding Simulator')
+RUN_ALL = bool(CFG_SIM.get('auto_run_all', False))
 
 TOTAL_WIDTH = SCREEN_WIDTH + (2 * SCREEN_MARGIN)
 TOTAL_HEIGHT = SCREEN_HEIGHT + HEAD_MARGIN + SCREEN_MARGIN
@@ -54,6 +56,12 @@ PACKET_LOSS = int(CFG_PARAM.get("packet_loss_percent", 0))
 CHANNEL_NUM = int(CFG_PARAM.get("channels", 2))
 TIMESLOT_NUM = int(CFG_PARAM.get("timeslots", 2))
 FINITE_FIELD = CFG_PARAM.get("fifi", "binary")
+TX_MODE = CFG_PARAM.get("tx_mode", "half_duplex")
+RX_MODE = CFG_PARAM.get("rx_mode", "multi")
+
+# Fetch Enhancing Algorithm parameters
+ALGM_N = int(CFG_PARAM.get("algm_n", 1))
+ALGM_TYPE = CFG_PARAM.get("algm_type", "greedy")
 
 # Kodo configuration
 CFG_KODO = {
@@ -64,7 +72,9 @@ CFG_KODO = {
     "packet_size": PACKET_SIZE,
     "channels": CHANNEL_NUM,
     "timeslots": TIMESLOT_NUM,
-    "seed": SEED_VALUE
+    "seed": SEED_VALUE,
+    "duplex": True if re.match("full", TX_MODE) else False,
+    "rx_multi": True if re.match("multi", RX_MODE) else False 
 }
 
 # Fetch Logger related Configurations, or set default values.
@@ -142,7 +152,7 @@ class NCSim:
         summ_header = [*self.nodes[0].get_statistics(0)]
         # Init controller window
         self.ctrl = Controller(
-            self.screen.root, summ_header, **self.get_configs())
+            self.screen.root, summ_header, auto_run=RUN_ALL, **self.get_configs())
         cde.set_logger(kodo_log)
         print("init done")
 
@@ -550,9 +560,13 @@ class NCSim:
             "topology": TOPOLOGY_TYPE,
             "packet_size_bytes": PACKET_SIZE,
             "finite_field": FINITE_FIELD,
-            "packet_loss_percent": PACKET_LOSS,
+            "packet_loss_%": PACKET_LOSS,
             "channels": CHANNEL_NUM,
-            "timeslots": TIMESLOT_NUM
+            "timeslots": TIMESLOT_NUM,
+            "tx_mode": TX_MODE,
+            "rx_mode": RX_MODE,
+            "algorithm": ALGM_TYPE,
+            "periodic_Nth": ALGM_N
         }
 
 
