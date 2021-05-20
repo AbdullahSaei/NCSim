@@ -38,6 +38,7 @@ SCREEN_BGCOLOR = CFG_SIM.get('screen_bgcolor', 'black')
 SCREEN_REFRESH_TIME = int(CFG_SIM.get("screen_refresh_time", 0.1))
 SCREEN_TITLE = CFG_SIM.get('screen_title', 'Network Coding Simulator')
 RUN_ALL = bool(CFG_SIM.get('auto_run_all', False))
+AUTO_RUN_TO_FULL = bool(CFG_SIM.get('auto_full_aod', False))
 
 TOTAL_WIDTH = SCREEN_WIDTH + (2 * SCREEN_MARGIN)
 TOTAL_HEIGHT = SCREEN_HEIGHT + HEAD_MARGIN + SCREEN_MARGIN
@@ -285,12 +286,6 @@ class NCSim:
                 c = c + 0.01
                 done = distribute_nodes(Q_s)
 
-        # IF HYBRID TOPOLOGY
-        elif topology == "hybrid":
-            pass
-        # IF BUTTERFLY TOPOLOGY
-        elif topology == "butterfly":
-            pass
         # IF GRID TOPOLOGY
         elif topology == "grid":
             # Get nearest root + 1
@@ -360,7 +355,7 @@ class NCSim:
 
         else:
             trace.error("Invalid Topology input, using Random")
-            self.draw_network("grid")
+            self.draw_network("random")
 
     def discover_network(self):
         kpi.info(f"totn {NUM_OF_NODES},alln,topology {TOPOLOGY_TYPE}")
@@ -475,6 +470,9 @@ class NCSim:
         for r in range(1, ROUNDS+1):
             self.run_round(g, r)
         self.end_generation()
+
+        if AUTO_RUN_TO_FULL:
+            self.run_to_full()
 
     def end_round(self, round_num):
         # calculate data for the round

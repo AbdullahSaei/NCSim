@@ -397,14 +397,16 @@ class Controller:
         collision_ratio = df['rx_collisions'].sum() / \
             df['rx_total'].sum() * 100
         ignored_ratio = df['rx_ignored'].sum() / df['rx_total'].sum() * 100
+        missed_ratio = df['rx_missed'].sum() / df['rx_total'].sum() * 100
         pathloss_ratio = df['rx_SINR_loss'].sum() / df['rx_total'].sum() * 100
 
         # Create header
         headers = ["Num of rounds", "Expected rounds", "Reception success %",
-                   "Collision %", "Ignored msgs %", "Pathloss %"]
+                   "Collision %", "Ignored msgs %", "Missed msgs %", "Pathloss %"]
         # Values format
         values = [f"{r_curr}", f"{rnds}", f"{reception_ratio:.2f}%",
-                  f"{collision_ratio:.2f}%", f"{ignored_ratio:.2f}%", f"{pathloss_ratio: .2f}%"]
+                  f"{collision_ratio:.2f}%", f"{ignored_ratio:.2f}%",
+                  f"{missed_ratio:.2f}%", f"{pathloss_ratio: .2f}%"]
 
         # display values
         self.display_data(self.f_at_100, values, headers)
