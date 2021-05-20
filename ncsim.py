@@ -463,11 +463,13 @@ class NCSim:
         print("\nGeneration {} \n".format(g))
         # clean up before new generation
         self.ctrl.new_generation_cleanup()
-        cde.clean_up_all()
         [n.clear_counters() for n in self.nodes]
 
         # Generate new data
         cde.generate_data()
+
+        # round zero is consuming self data
+        self.end_round(0)
 
         # Starting from second round
         for r in range(1, ROUNDS+1):

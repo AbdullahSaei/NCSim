@@ -256,7 +256,7 @@ class Controller:
     def update_summ_tree(self, tree, data):
         if data:
             df = pd.DataFrame(data)
-            color = "#"+("%06x" % np.random.randint(3375000, 16000000))
+            color = "#"+("%06x" % np.random.randint(10000000, 16000000))
             # generating for loop to add new values to tree
             for _, row in df.iterrows():
                 vals = list(map(int, row.tolist()))
@@ -360,7 +360,7 @@ class Controller:
         x_range = np.arange(0, round_no+1)
         # Graphs update
         ax.clear()         # clear axes from previous plot
-        ax.plot([1, *arr])
+        ax.plot(arr)
         ax.set_title(f'Average ranks of {self.num_nodes} decoders Vs num of transmissions')
         ax.set_xlabel(f'Num of transmissions {r_current}')
         ax.set_xticks(x_range)
@@ -374,11 +374,11 @@ class Controller:
         # Add a vertical lines
         if r_num and r_current >= r_num:
             ax.axvline(r_num, label=f"tx = {r_num}", ls=':', color='r')
-            ax.axhline(np.interp(r_num-1, x_range[:-1], arr),
+            ax.axhline(np.interp(r_num, x_range, arr),
                        label=f"rank @ tx {r_num}", ls='--', color='gray')
         if self.num_nodes in arr:
             index = np.searchsorted(arr, self.num_nodes)
-            ax.axvline(index+1, label="full AoD", ls='--', color='g')
+            ax.axvline(index, label="full AoD", ls='--', color='g')
             self.show_full_aod_stats(r_current)
 
         ax.legend(loc='lower right')

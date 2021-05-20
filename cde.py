@@ -66,15 +66,16 @@ def callback_function(zone, message):
 nodes = []
 data_in = []
 data_out = []
-ranks = []
 
 def kodo_init():# Create list of encoder and decoder triples
     global nodes
     global data_in
     global data_out
+
     nodes = []
     data_in = []
     data_out = []
+
     for i in range(NUM_OF_NODES):
         # init encoder
         encoder = kodo.RLNCEncoder(field, symbols, symbol_size)
@@ -86,12 +87,11 @@ def kodo_init():# Create list of encoder and decoder triples
         decoder.set_seed(seed)
         decoder.set_log_callback(callback_function)
         nodes.append([i, encoder, decoder])
-        ranks.append((0,0,0,0,0))
 
 
 def generate_data():
-    if not nodes:
-        kodo_init()
+    # Always clear when new generation
+    kodo_init()
 
     # for random message generation
     _alphabet = string.ascii_uppercase + string.digits
@@ -150,16 +150,10 @@ def node_receive(node, packets, round, logger):
         for p in packets:
             decoder.consume_payload(p)
 
-        decoder.update_symbol_status()
-        ranks[i] = (
-                    decoder.rank(),
-                    decoder.symbols_partially_decoded(),
-                    decoder.symbols_decoded(),
-                    decoder.symbols_missing(),
-                    decoder.symbols()
-                )
+        ranks = get_ranks(i)
+        
         log_msg += "rank/part/decoded/missing/total {}/{}/{}/{}/{}".format(
-            *ranks[i])
+            *ranks)
         logger.info(log_msg)
 
 
@@ -183,7 +177,13 @@ def calculate_aod(round="i", logger=None):
     return aods
 
 def get_ranks(index):
-    return ranks[index]
-
-def clean_up_all():
-    kodo_init()
+    i, encoder, decoder = nodes[index]
+    decoder.update_symbol_status()
+    ranks = (
+                    decoder.rank(),
+                    decoder.symbols_partially_decoded(),
+                    decoder.symbols_decoded(),
+                    decoder.symbols_missing(),
+                    decoder.symbols()
+                )
+    return ranks
