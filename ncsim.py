@@ -75,7 +75,7 @@ CFG_KODO = {
     "timeslots": TIMESLOT_NUM,
     "seed": SEED_VALUE,
     "duplex": True if re.match("full", TX_MODE) else False,
-    "rx_multi": True if re.match("multi", RX_MODE) else False 
+    "rx_multi": True if re.match("multi", RX_MODE) else False
 }
 
 # Fetch Logger related Configurations, or set default values.
@@ -153,7 +153,8 @@ class NCSim:
         summ_header = [*self.nodes[0].get_statistics(0)]
         # Init controller window
         self.ctrl = Controller(
-            self.screen.root, summ_header, auto_run=RUN_ALL, **self.get_configs())
+            self.screen.root, summ_header, auto_run=RUN_ALL, 
+            auto_full=AUTO_RUN_TO_FULL, **self.get_configs())
         cde.set_logger(kodo_log)
         print("init done")
 
@@ -471,7 +472,8 @@ class NCSim:
             self.run_round(g, r)
         self.end_generation()
 
-        if AUTO_RUN_TO_FULL:
+        # continue running if check box marked
+        if self.ctrl.is_run_to_full():
             self.run_to_full()
 
     def end_round(self, round_num):
@@ -543,7 +545,7 @@ class NCSim:
             if counter == 100:
                 # LOGGING:
                 self.screen.visual_output_msg(
-                                f"TIMEOUT 100 runs!!!")
+                    f"TIMEOUT 100 runs!!!")
                 trace.error('TIMEOUT!!')
                 break
 
@@ -560,7 +562,7 @@ class NCSim:
             "topology": TOPOLOGY_TYPE,
             "packet_size_bytes": PACKET_SIZE,
             "finite_field": FINITE_FIELD,
-            "packet_loss_%": PACKET_LOSS,
+            "SINR_loss_%": PACKET_LOSS,
             "channels": CHANNEL_NUM,
             "timeslots": TIMESLOT_NUM,
             "tx_mode": TX_MODE,

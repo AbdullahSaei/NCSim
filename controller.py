@@ -160,7 +160,7 @@ class MouseClick:
 
 
 class Controller:
-    def __init__(self, master, summ_header, **configs):
+    def __init__(self, master, summ_header, auto_run, auto_full, **configs):
         self.root = master
         self.summ_header = summ_header
         self.configs = configs
@@ -193,7 +193,7 @@ class Controller:
         n.pack(fill=tk.BOTH, expand=1)
 
         self.new_generation_cleanup(clear_frames=False)
-        self.create_controller()
+        self.create_controller(auto_run=auto_run, auto_full=auto_full)
         self.aod_ax, self.aod_canvas = self.create_graph(self.aod_grph_frame)
         self.ranks_ax, self.ranks_canvas = self.create_graph(
             self.ranks_grph_frame)
@@ -256,7 +256,7 @@ class Controller:
     def update_summ_tree(self, tree, data):
         if data:
             df = pd.DataFrame(data)
-            color = "#"+("%06x" % np.random.randint(10000000, 16000000))
+            color = "#"+("%06x" % np.random.randint(12000000, 13000000))
             # generating for loop to add new values to tree
             for _, row in df.iterrows():
                 vals = list(map(int, row.tolist()))
@@ -298,14 +298,14 @@ class Controller:
         all_pane.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
         # Create Header and Tx data
-        headers_current = ["Round", "Avg Ranks", "Avg AoD",
+        self.headers_current = ["Round", "Avg Ranks", "Avg AoD",
                            "Max AoD", "Min AoD", "Nodes 100%", "Nodes <50%"]
         vals = [0 for _ in range(self.num_nodes)]
         ranks = [(1, 1, 1, 1, 1) for _ in range(self.num_nodes)]
         stats = None
         self.data = [vals, ranks, stats]
         # Show data
-        self.display_data(self.f_current, vals, headers_current)
+        self.display_data(self.f_current, vals, self.headers_current)
         self.update_analysis(self.data)
 
     def update_analysis(self, data, r_curr=0, r_num=0, r_xtra=0):
@@ -332,8 +332,8 @@ class Controller:
 
         # Show message if it is the specified round
         if r_curr and not r_xtra and r_curr == r_num:
-            headers = ["Avg Ranks", "Avg AoD", "Max AoD",
-                       "Min AoD", "Nodes 100%", "Nodes <50%"]
+            # snapshot the current results for that round
+            headers = self.headers_current[1:]
             self.display_data(self.f_at_tx, run_values[1:], headers)
 
         # update other GUIs
@@ -402,7 +402,7 @@ class Controller:
 
         # Create header
         headers = ["Num of rounds", "Expected rounds", "Reception success %",
-                   "Collision %", "Ignored msgs %", "Missed msgs %", "Pathloss %"]
+                   "Collision %", "Ignored msgs %", "Missed msgs %", "SINR loss %"]
         # Values format
         values = [f"{r_curr}", f"{rnds}", f"{reception_ratio:.2f}%",
                   f"{collision_ratio:.2f}%", f"{ignored_ratio:.2f}%",
@@ -441,13 +441,13 @@ class Controller:
         # create clean frame
         self.summ_tree = self.create_summ_tree(self.summ_frame)
 
-    def create_controller(self):
+    def create_controller(self, auto_run, auto_full):
         # Radio buttons
         # Container for Radio buttons
         tk.Label(self.ctrlr, text='methods:', anchor='w').pack(pady=(10, 0))
         # Radio variable
         self.cont_run = tk.IntVar()
-        if not self.configs.get("auto_run"):
+        if not auto_run:
             self.cont_run.set(3)
         else:
             self.cont_run.set(0)
@@ -466,6 +466,19 @@ class Controller:
                                  command=lambda: self.enable_nxt_btn('rnd'))
         self.R3.pack(anchor=tk.W)
 
+        ttk.Separator(self.ctrlr, orient='horizontal').pack(
+            side='top', fill='x', pady=10)
+
+        # Checkbox variable
+        self.auto_full = tk.BooleanVar()
+        if auto_full:
+            self.auto_full.set(True)
+        else:
+            self.auto_full.set(False)
+        self.CB1 = tk.Checkbutton(self.ctrlr, text="Run until full Aod",
+                                 variable=self.auto_full, onvalue=True, offvalue=False)
+        self.CB1.pack(anchor=tk.W)
+    
         ttk.Separator(self.ctrlr, orient='horizontal').pack(
             side='top', fill='x', pady=10)
 
@@ -534,6 +547,9 @@ class Controller:
 
     def is_continuous_run(self):
         return self.cont_run.get()
+
+    def is_run_to_full(self):
+        return self.auto_full.get()
 
     def nxt_clicked(self):
         self.is_nxt.set(True)
