@@ -13,7 +13,7 @@ class Node(Turtle):
         # simulation configuration
         self.buffer_size = int(kwargs.get("buf_size", 100))
         self.neighbors = []
-        self.avaliable_messages = []
+        self.available_messages = []
         self.rx_buffer = []
         self.ch_num = int(kwargs.get("channels", 2))
         self.ts_num = int(kwargs.get("timeslots", 2))
@@ -53,7 +53,7 @@ class Node(Turtle):
                    font=("Calibri", 12, "bold"))
         # Print AoD
         self.write(f"  0%", align="left",
-                   font=("sans", 12))
+                   font=("sans", 12, "normal"))
 
     def add_neighbor(self, new_neighbor):
         # To exclude duplications and adding self node to neighbors
@@ -67,26 +67,26 @@ class Node(Turtle):
         self.tx_count = self.tx_count + len(self.neighbors)
 
     def sense_spectrum(self, packet_loss_percent, logger=None):
-        # To simulate pathloss effect
+        # To simulate path loss effect
         packet_loss_prob = packet_loss_percent / 100
         weights = [1 - packet_loss_prob, packet_loss_prob]
         # list of received messages after channel effect
         rx_msg = []
         # if there is available message
-        if len(self.avaliable_messages) > 0:
+        if len(self.available_messages) > 0:
             # Total received messages
-            self.total_rx_count += len(self.avaliable_messages)
+            self.total_rx_count += len(self.available_messages)
             logger.info(
                 "node {:2} found {:2} msgs".format(
-                    self.node_id, len(self.avaliable_messages)
+                    self.node_id, len(self.available_messages)
                 )
             )
 
             # remove collisions
-            all_srcs = [src for _, _, src in self.avaliable_messages]
+            all_srcs = [src for _, _, src in self.available_messages]
             # survivor msgs from collisions
             unq_msgs = []
-            for i, m, src in self.avaliable_messages:
+            for i, m, src in self.available_messages:
                 freq = all_srcs.count(src)
                 if freq == 1:
                     unq_msgs.append((i, m, src))
@@ -99,8 +99,8 @@ class Node(Turtle):
                         )
                     )
 
-            # filter ig messages due to: tx_mode and packetloss
-            # survivers
+            # filter ig messages due to: tx_mode and packet loss
+            # survivors
             multi_rx_msg = []
             for i, channel_msg, ch_ts in unq_msgs:
                 # node cannot transmit and receive at the same time
@@ -142,8 +142,9 @@ class Node(Turtle):
                                 self.node_id, skipped_msgs
                             )
                         )
-                        temp = random.choice(gmsg)
-                        selected = (temp[0], temp[1])
+                        arr = np.array(gmsg, dtype=object)
+                        output = arr[np.random.choice(arr.shape[0])]
+                        selected = (output[0], output[1])
                     else:
                         selected = (gmsg[0][0], gmsg[0][1]) 
                     rx_msg.append(selected)
@@ -163,8 +164,9 @@ class Node(Turtle):
 
         # not all received messages can fit into the buffer
         if len(rx_msg) > self.buffer_size:
-            rx_msg = random.choice(rx_msg, size=(
-                self.buffer_size), replace=False)
+            arr = np.array(rx_msg, dtype=object)
+            selected = arr[np.random.choice(arr.shape[0], size=self.buffer_size, replace=False)]
+            rx_msg = selected.tolist()
 
         # update counter
         self.success_rx_count += len(rx_msg)
@@ -172,7 +174,7 @@ class Node(Turtle):
         self.rx_buffer = rx_msg
 
     def access_rx_buffer(self, i, new_packet, on_channel):
-        self.avaliable_messages.append((i, new_packet, on_channel))
+        self.available_messages.append((i, new_packet, on_channel))
 
     def get_rx_packets(self):
         if len(self.rx_buffer) > 0:
@@ -193,14 +195,14 @@ class Node(Turtle):
         self.rank, *_, self.missing, _ = ranks
         self.undo()
         self.write(f"  {aod:3.0f}%", align="left",
-                   font=("sans", 12))
+                   font=("sans", 12, "normal"))
         self.new_round_cleanup()
         return self.get_statistics(r_num)
 
     def new_round_cleanup(self):
         # discard other available messages
         # for next round clean startup
-        self.avaliable_messages = []
+        self.available_messages = []
         # Clear buffer
         self.rx_buffer = []
 

@@ -130,6 +130,26 @@ ROUNDS = int(GEN_TIME/ACT_TIME)
 EXTRA_RNDS = 0
 
 
+def get_configs():
+    return {
+        "num_nodes": NUM_OF_NODES,
+        "num_rounds": ROUNDS,
+        "seed_value": SEED_VALUE,
+        "generation_time_ms": GEN_TIME,
+        "action_time_ms": ACT_TIME,
+        "topology": TOPOLOGY_TYPE,
+        "packet_size_bytes": PACKET_SIZE,
+        "finite_field": FINITE_FIELD,
+        "SINR_loss_%": PACKET_LOSS,
+        "channels": CHANNEL_NUM,
+        "timeslots": TIMESLOT_NUM,
+        "tx_mode": TX_MODE,
+        "rx_mode": RX_MODE,
+        "algorithm": ALGM_TYPE,
+        "periodic_Nth": ALGM_N
+    }
+
+
 class NCSim:
     def __init__(self):
         # Call to NCSimVisualizer create Screen
@@ -142,6 +162,8 @@ class NCSim:
         self.nodes = []
         # Call Nodes Init Method
         self.create_nodes()
+        # store AoDs
+        self.full_AoD = []
 
         # create right click listener
         self.mclick = MouseClick(self.screen.root, self.nodes)
@@ -154,7 +176,7 @@ class NCSim:
         # Init controller window
         self.ctrl = Controller(
             self.screen.root, summ_header, auto_run=RUN_ALL, 
-            auto_full=AUTO_RUN_TO_FULL, **self.get_configs())
+            auto_full=AUTO_RUN_TO_FULL, **get_configs())
         cde.set_logger(kodo_log)
         print("init done")
 
@@ -220,7 +242,7 @@ class NCSim:
             LOW_VALUE = 0
             HIGH_VALUE = 1
 
-            # divids the screen to 4 quarters
+            # divides the screen to 4 quarters
             def create_quarters(mutate=0):
                 # for the linear equation
                 a = 0.03 + mutate
@@ -330,8 +352,10 @@ class NCSim:
                     continue
                 # Move Cursor in circle shape by node spacing angle
                 draw_cursor.circle(MAX_COVERAGE, node_spacing)
-                # Set heading towards the drawing curser
+                # Set heading towards the drawing cursor
                 node.setheading(node.towards(draw_cursor.pos()))
+                # init before use
+                node_position = 0
                 # Move random fd distance
                 success = False
                 while not success:
@@ -490,10 +514,8 @@ class NCSim:
         # Calculate nodes with 100% AoD
         self.full_AoD = [1 if n.aod == 100 else 0 for _,
                          n in enumerate(self.nodes)]
-        kpi.info("totn {},al{},AoD {:2}/{} has 100%".format(
-            NUM_OF_NODES,
-            ROUNDS + EXTRA_RNDS,
-            sum(self.full_AoD), len(self.full_AoD)))
+        kpi.info(
+            f"totn {NUM_OF_NODES},al{ROUNDS + EXTRA_RNDS},AoD {sum(self.full_AoD):2}/{len(self.full_AoD)} has 100%")
 
         if self.ctrl.is_continuous_run() > 1:
             self.ctrl.enable_nxt_btn('gen')
@@ -551,25 +573,6 @@ class NCSim:
 
     def end_keep_open(self):
         self.screen.mainloop()
-
-    def get_configs(self):
-        return {
-            "num_nodes": NUM_OF_NODES,
-            "num_rounds": ROUNDS,
-            "seed_value": SEED_VALUE,
-            "generation_time_ms": GEN_TIME,
-            "action_time_ms": ACT_TIME,
-            "topology": TOPOLOGY_TYPE,
-            "packet_size_bytes": PACKET_SIZE,
-            "finite_field": FINITE_FIELD,
-            "SINR_loss_%": PACKET_LOSS,
-            "channels": CHANNEL_NUM,
-            "timeslots": TIMESLOT_NUM,
-            "tx_mode": TX_MODE,
-            "rx_mode": RX_MODE,
-            "algorithm": ALGM_TYPE,
-            "periodic_Nth": ALGM_N
-        }
 
 
 if __name__ == "__main__":
