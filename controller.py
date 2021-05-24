@@ -7,7 +7,17 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from turtle import Turtle
 import matplotlib
+
 matplotlib.use('TkAgg')
+
+
+def setup_turtles():
+    tur = Turtle()
+    tur.pu()
+    tur.ht()
+    tur.color("saddle brown")
+    tur.pensize(2)
+    return tur
 
 
 class MouseClick:
@@ -37,16 +47,8 @@ class MouseClick:
                                command=self.hide_all_coverages)
 
         self.nodes = nodes
-        self.turs = [self.setup_turtles() for _ in range(len(self.nodes))]
+        self.turs = [setup_turtles() for _ in range(len(self.nodes))]
         self.focus_node = None
-
-    def setup_turtles(self):
-        tur = Turtle()
-        tur.pu()
-        tur.ht()
-        tur.color("saddle brown")
-        tur.pensize(2)
-        return tur
 
     def show_coverage(self):
         # self.focus_node.show_coverage()
@@ -133,7 +135,7 @@ class MouseClick:
         self.aMenu.unpost()
         self.bMenu.unpost()
 
-        # get curser tkk position
+        # get cursor tkk position
         x_root = self.root.winfo_pointerx()
         y_root = self.root.winfo_pointery()
 
@@ -147,7 +149,7 @@ class MouseClick:
         dis = [n.distance(pos) for n in self.nodes]
         nearest_node = self.nodes[dis.index(min(dis))]
         self.focus_node = (dis.index(min(dis)), nearest_node) if (
-            min(dis) < 15) else None
+                min(dis) < 15) else None
         return self.focus_node
 
     def left_click(self, x, y):
@@ -157,6 +159,39 @@ class MouseClick:
         y_root = self.root.winfo_pointery()
         if self.get_node((x, y)):
             self.focus_node = self.get_node((x, y))
+
+
+def create_graph(root):
+    fig, ax = plt.subplots()
+
+    canvas = FigureCanvasTkAgg(fig, master=root)
+    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+    canvas.draw()
+    return (ax, canvas)
+
+
+def display_data(frame, values, headers=None, assert_empty=False):
+    # check if frame is empty
+    if assert_empty and frame.winfo_children():
+        return False
+    elif frame.winfo_children():
+        lbl_headers, lbl_vals = frame.winfo_children()
+    else:
+        lbl_headers = tk.Label(frame)
+        lbl_vals = tk.Label(frame)
+
+    # Create header
+    if headers:
+        lbl_headers.config(
+            font='{Fira Sans} 12 {bold}', text=("\n".join(
+                map(lambda s: f"{s.replace('_', ' ')}:", headers)
+            )))
+        lbl_headers.pack(side=tk.LEFT, pady=10, padx=5, fill=tk.BOTH)
+
+    # Create values label
+    lbl_vals.config(font='{Fira Sans} 12', text=(
+        "\n".join(map(str, values))))
+    lbl_vals.pack(side=tk.LEFT, pady=10, padx=5, fill=tk.BOTH)
 
 
 class Controller:
@@ -182,10 +217,10 @@ class Controller:
 
         # Analysis tabs
         n = ttk.Notebook(self.anlys)
-        self.stat_frame = ttk.Frame(n)      # first page
-        self.aod_grph_frame = ttk.Frame(n)   # second page
-        self.ranks_grph_frame = ttk.Frame(n)   # third page
-        self.summ_frame = ttk.Frame(n)   # forth page
+        self.stat_frame = ttk.Frame(n)  # first page
+        self.aod_grph_frame = ttk.Frame(n)  # second page
+        self.ranks_grph_frame = ttk.Frame(n)  # third page
+        self.summ_frame = ttk.Frame(n)  # forth page
         n.add(self.stat_frame, text='Statistics')
         n.add(self.aod_grph_frame, text='AoD Graph')
         n.add(self.ranks_grph_frame, text='Ranks Graph')
@@ -194,41 +229,10 @@ class Controller:
 
         self.new_generation_cleanup(clear_frames=False)
         self.create_controller(auto_run=auto_run, auto_full=auto_full)
-        self.aod_ax, self.aod_canvas = self.create_graph(self.aod_grph_frame)
-        self.ranks_ax, self.ranks_canvas = self.create_graph(
+        self.aod_ax, self.aod_canvas = create_graph(self.aod_grph_frame)
+        self.ranks_ax, self.ranks_canvas = create_graph(
             self.ranks_grph_frame)
         self.create_analysis(self.stat_frame)
-
-    def create_graph(self, root):
-        fig, ax = plt.subplots()
-
-        canvas = FigureCanvasTkAgg(fig, master=root)
-        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-        canvas.draw()
-        return (ax, canvas)
-
-    def display_data(self, frame, values, headers=None, assert_empty=False):
-        # check if frame is empty
-        if assert_empty and frame.winfo_children():
-            return False
-        elif frame.winfo_children():
-            lbl_headers, lbl_vals = frame.winfo_children()
-        else:
-            lbl_headers = tk.Label(frame)
-            lbl_vals = tk.Label(frame)
-
-        # Create header
-        if headers:
-            lbl_headers.config(
-                font='{Fira Sans} 12 {bold}', text=("\n".join(
-                    map(lambda s: f"{s.replace('_', ' ')}:", headers)
-                )))
-            lbl_headers.pack(side=tk.LEFT, pady=10, padx=5, fill=tk.BOTH)
-
-        # Create values label
-        lbl_vals.config(font='{Fira Sans} 12', text=(
-            "\n".join(map(str, values))))
-        lbl_vals.pack(side=tk.LEFT, pady=10, padx=5, fill=tk.BOTH)
 
     def create_summ_tree(self, root):
         # taking all the columns heading in a variable "df_col".
@@ -243,26 +247,26 @@ class Controller:
                             yscrollcommand=scroll.set)
         scroll.config(command=tree.yview)
         # all the column name are generated dynamically.
-        tree['columns'] = (df_col)
+        tree['columns'] = df_col
 
         # generating for loop to create columns and give heading to them through df_col var.
         for col, x in enumerate(df_col):
             tree.column(col, width=50, anchor='e')
-            tree.heading(col, text=x.replace('_', ' '), command=lambda _col=col:
-                         self.treeview_sort_column(tree, _col, False))
+            tree.heading(col, text=x.replace('_', ' '),
+                         command=lambda _col=col: self.treeview_sort_column(tree, _col, False))
         tree.pack(expand=True, fill=tk.BOTH)
         return tree
 
     def update_summ_tree(self, tree, data):
         if data:
             df = pd.DataFrame(data)
-            color = "#"+("%06x" % np.random.randint(12000000, 13000000))
+            color = "#" + ("%06x" % np.random.randint(12000000, 13000000))
             # generating for loop to add new values to tree
             for _, row in df.iterrows():
                 vals = list(map(int, row.tolist()))
 
                 # generating for loop to print values of dataframe in treeview column.
-                tree.insert('', 0, values=vals, tags=(color))
+                tree.insert('', 0, values=vals, tags=color)
                 tree.tag_configure(color, background=color)
 
             self.df_nodes = self.df_nodes.append(df, ignore_index=True)
@@ -278,7 +282,7 @@ class Controller:
         self.f_current = ttk.Labelframe(top_pane, text='Current run')
 
         # Show Configurations to reserve size
-        self.display_data(self.f_config, list(self.configs.values()),
+        display_data(self.f_config, list(self.configs.values()),
                           list(self.configs.keys()))
         top_pane.add(self.f_config, weight=20)
         top_pane.add(self.f_current, weight=52)
@@ -299,13 +303,13 @@ class Controller:
 
         # Create Header and Tx data
         self.headers_current = ["Round", "Avg Ranks", "Avg AoD",
-                           "Max AoD", "Min AoD", "Nodes 100%", "Nodes <50%"]
+                                "Max AoD", "Min AoD", "Nodes 100%", "Nodes <50%"]
         vals = [0 for _ in range(self.num_nodes)]
         ranks = [(1, 1, 1, 1, 1) for _ in range(self.num_nodes)]
         stats = None
         self.data = [vals, ranks, stats]
         # Show data
-        self.display_data(self.f_current, vals, self.headers_current)
+        display_data(self.f_current, vals, self.headers_current)
         self.update_analysis(self.data)
 
     def update_analysis(self, data, r_curr=0, r_num=0, r_xtra=0):
@@ -328,13 +332,13 @@ class Controller:
         run_values = [f"{r_curr}/{r_num}", f"{avg_ranks:.2f}/{self.num_nodes}",
                       f"{arr.mean():.2f}%", f"{arr.max():.2f}%", f"{arr.min():.2f}%",
                       f"{f_dn}/{self.num_nodes}", f"{h_dn}/{self.num_nodes}"]
-        self.display_data(self.f_current, run_values)
+        display_data(self.f_current, run_values)
 
         # Show message if it is the specified round
         if r_curr and not r_xtra and r_curr == r_num:
             # snapshot the current results for that round
             headers = self.headers_current[1:]
-            self.display_data(self.f_at_tx, run_values[1:], headers)
+            display_data(self.f_at_tx, run_values[1:], headers)
 
         # update other GUIs
         self.update_summ_tree(self.summ_tree, stats)
@@ -345,28 +349,28 @@ class Controller:
     def update_hist_graph(self, arr, round_no, ax, canvas):
         # Graphs update
         n_range = [*range(self.num_nodes)]
-        ax.clear()         # clear axes from previous plot
+        ax.clear()  # clear axes from previous plot
         ax.set_title(
             f'Availability of data for {self.num_nodes} nodes @ tx {round_no}')
         ax.set_xlabel('Nodes')
         ax.set_xticks(n_range)
         ax.set_ylabel('Availability of Data percentage (%)')
-        ax.set_ylim(0, 100)     # set the ylim to bottom, top
+        ax.set_ylim(0, 100)  # set the ylim to bottom, top
         ax.bar(n_range, arr)
         canvas.draw()
 
     def update_ranks_graph(self, arr, r_current, r_num, r_xtra, ax, canvas):
         round_no = r_num + r_xtra
-        x_range = np.arange(0, round_no+1)
+        x_range = np.arange(0, round_no + 1)
         # Graphs update
-        ax.clear()         # clear axes from previous plot
+        ax.clear()  # clear axes from previous plot
         ax.plot(arr)
         ax.set_title(f'Average ranks of {self.num_nodes} decoders Vs num of transmissions')
         ax.set_xlabel(f'Num of transmissions {r_current}')
         ax.set_xticks(x_range)
         ax.set_ylabel('Avg ranks of decoders')
         # set the ylim to bottom, top
-        ax.set_yticks(np.arange(self.num_nodes+1))
+        ax.set_yticks(np.arange(self.num_nodes + 1))
         ax.margins(x=0)
         ax.grid()
         # Add horizontal lines
@@ -395,7 +399,7 @@ class Controller:
         # Calculate ratio
         reception_ratio = df['rx_success'].sum() / df['rx_total'].sum() * 100
         collision_ratio = df['rx_collisions'].sum() / \
-            df['rx_total'].sum() * 100
+                          df['rx_total'].sum() * 100
         ignored_ratio = df['rx_ignored'].sum() / df['rx_total'].sum() * 100
         missed_ratio = df['rx_missed'].sum() / df['rx_total'].sum() * 100
         pathloss_ratio = df['rx_SINR_loss'].sum() / df['rx_total'].sum() * 100
@@ -409,7 +413,7 @@ class Controller:
                   f"{missed_ratio:.2f}%", f"{pathloss_ratio: .2f}%"]
 
         # display values
-        self.display_data(self.f_at_100, values, headers)
+        display_data(self.f_at_100, values, headers)
 
     def treeview_sort_column(self, tv, col, reverse):
         l = [(int(tv.set(k, col)), k) for k in tv.get_children('')]
@@ -421,7 +425,7 @@ class Controller:
 
         # reverse sort next time
         tv.heading(col, command=lambda _col=col:
-                   self.treeview_sort_column(tv, _col, not reverse))
+        self.treeview_sort_column(tv, _col, not reverse))
 
     def new_generation_cleanup(self, clear_frames=True):
         # Clean up
@@ -476,9 +480,9 @@ class Controller:
         else:
             self.auto_full.set(False)
         self.CB1 = tk.Checkbutton(self.ctrlr, text="Run until full Aod",
-                                 variable=self.auto_full, onvalue=True, offvalue=False)
+                                  variable=self.auto_full, onvalue=True, offvalue=False)
         self.CB1.pack(anchor=tk.W)
-    
+
         ttk.Separator(self.ctrlr, orient='horizontal').pack(
             side='top', fill='x', pady=10)
 
@@ -506,7 +510,7 @@ class Controller:
         self.btn_xtr_gen.pack()
 
         self.btn_xtr_rnd = tk.Button(
-            self.ctrlr, text="Extra round",  width=15)
+            self.ctrlr, text="Extra round", width=15)
         self.btn_xtr_rnd['state'] = 'disabled'
         self.btn_xtr_rnd.pack()
 
@@ -515,7 +519,7 @@ class Controller:
 
         # footer buttons
         self.btn_to_full = tk.Button(
-            self.ctrlr, text="Full AoD",  width=15)
+            self.ctrlr, text="Full AoD", width=15)
         self.btn_to_full['state'] = 'disabled'
         self.btn_to_full.pack()
 

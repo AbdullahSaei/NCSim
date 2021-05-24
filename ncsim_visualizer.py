@@ -197,6 +197,7 @@ class NCSimVisualizer:
             try:
                 self.root.update()
                 self.root.update_idletasks()
-            except:
+            except Exception as e:
                 print("bye")
+                print(e)
                 break
