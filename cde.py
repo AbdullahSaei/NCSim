@@ -50,16 +50,19 @@ symbols = NUM_OF_NODES
 symbol_size = PACKET_SIZE
 logger = None
 
-# Pesudo random seed
+# Pseudo random seed
 np.random.seed(SEED_VALUE)
+
 
 # We want to follow the decoding process step-by-step
 def set_logger(log):
     global logger
     logger = log
 
+
 def callback_function(zone, message):
-    logger.info(f"*******\n{zone}\n*******\n==========\n{message}\n==========\n")
+    if logger:
+        logger.info(f"*******\n{zone}\n*******\n==========\n{message}\n==========\n")
 
 
 # Global scope Create list of encoder and decoder triples
@@ -67,7 +70,9 @@ nodes = []
 data_in = []
 data_out = []
 
-def kodo_init():# Create list of encoder and decoder triples
+
+def kodo_init():
+    # Create list of encoder and decoder triples
     global nodes
     global data_in
     global data_out
@@ -114,7 +119,7 @@ def generate_data():
         decoder.consume_systematic_symbol(pack, i)
 
 
-def node_broadcast(node, neighbours, round, logger):
+def node_broadcast(node, neighbours, rnd, _logger):
     # choose channel
     freq = np.random.choice([*range(node.ch_num)])
     time = np.random.choice([*range(node.ts_num)])
@@ -128,9 +133,9 @@ def node_broadcast(node, neighbours, round, logger):
 
     # log data
     # log message and channel
-    logger.info(
+    _logger.info(
         "node {:2},tx{:2},broadcast to {} nodes".format(
-            i, round, len(neighbours)))
+            i, rnd, len(neighbours)))
 
     # print("\nDecoder rank: {}/{}".format(decoder.rank(), symbols))
     # print(f"Node {i} sending to ", end='')
@@ -142,10 +147,10 @@ def node_broadcast(node, neighbours, round, logger):
     # print("")
 
 
-def node_receive(node, packets, round, logger):
+def node_receive(node, packets, rnd, _logger):
     i, encoder, decoder = nodes[node.node_id]
     # check if data in buffer
-    log_msg = "node {:2},rx{:2},".format(i, round)
+    log_msg = "node {:2},rx{:2},".format(i, rnd)
     if len(packets) > 0:
         for p in packets:
             decoder.consume_payload(p)
@@ -154,27 +159,27 @@ def node_receive(node, packets, round, logger):
         
         log_msg += "rank/part/decoded/missing/total {}/{}/{}/{}/{}".format(
             *ranks)
-        logger.info(log_msg)
-
+        _logger.info(log_msg)
 
     else:
         log_msg += "no buffered packets"
-        logger.warning(log_msg)
+        _logger.warning(log_msg)
 
 
-def calculate_aod(round="i", logger=None):
+def calculate_aod(rnd="i", _logger=None):
     aods = []
     for i, data in enumerate(data_out):
         d_i = [data[x:x+PACKET_SIZE] for x in range(0, len(data), PACKET_SIZE)]
         aod = [1 if din == dout else 0 for din, dout in zip(data_in, d_i)]
         s = "{} " * len(aod)
-        if logger:
-            logger.info(
+        if _logger:
+            _logger.info(
                 ("node {:2},kp{:2},AoD {:2}/{} [" + s + "]").format(
-                    i, round, sum(aod), len(aod), *aod)
+                    i, rnd, sum(aod), len(aod), *aod)
             )
         aods.append(sum(aod)/len(aod) * 100)
     return aods
+
 
 def get_ranks(index):
     i, encoder, decoder = nodes[index]

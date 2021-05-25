@@ -3,60 +3,36 @@ from node import Node
 from controller import MouseClick, Controller
 from platform import system as os_type
 import ncsim_visualizer as ncsv
-import json
 import time
 import numpy as np
 import logging
 import cde
 import re
 
-try:
-    # Open the NCSim Config Json file
-    with open('config.json') as json_file:
-        cfg = json.loads(json_file.read())    # Read Content
-
-except Exception as e:
-    cfg = {"unk": "unk"}
-    print('failure to read config.json, running default values')
-    print(e)
-
 CFG_OS = os_type()
-CFG_SIM = cfg.get('Simulation', {"unk": "unk"})   # Fetch Simulation Dictionary
-# Fetch Parameters Dictionary
-CFG_PARAM = cfg.get('Parameters', {"unk": "unk"})
+# Get values from ncs visualizer
 
-# Fetch Screen related Configurations, or set default values.
-SCREEN_WIDTH = int(CFG_SIM.get('screen_width', 600))
-SCREEN_HEIGHT = int(CFG_SIM.get('screen_height', 600))
-SCREEN_HEADER = CFG_SIM.get('screen_header', "NCSim Visualizer")
-HEADER_FONT_SIZE = int(CFG_SIM.get('header_font_size', 30))
-TEXT_FONT_SIZE = int(CFG_SIM.get('text_font_size', 12))
-SCREEN_MARGIN = int(CFG_SIM.get('screen_margin', 50))
-HEAD_MARGIN = int(CFG_SIM.get('head_margin', 150))
-MESSAGE_MARGIN = int(CFG_SIM.get('message_margin', 100))
-SCREEN_BGCOLOR = CFG_SIM.get('screen_bgcolor', 'black')
-SCREEN_REFRESH_TIME = int(CFG_SIM.get("screen_refresh_time", 0.1))
-SCREEN_TITLE = CFG_SIM.get('screen_title', 'Network Coding Simulator')
+# Fetch Simulation Dictionary
+CFG_SIM = ncsv.CFG_SIM   
+# Fetch Parameters Dictionary
+CFG_PARAM = ncsv.CFG_PARAM
+
+# Fetch RUN related Configurations, or set default values.
 RUN_ALL = bool(CFG_SIM.get('auto_run_all', False))
 AUTO_RUN_TO_FULL = bool(CFG_SIM.get('auto_full_aod', False))
 
-TOTAL_WIDTH = SCREEN_WIDTH + (2 * SCREEN_MARGIN)
-TOTAL_HEIGHT = SCREEN_HEIGHT + HEAD_MARGIN + SCREEN_MARGIN
-
 # Fetch Nodes related Configurations, or set default values.
-NUM_OF_NODES = int(CFG_PARAM.get("nodes_num", '10'))
+TOPOLOGY_TYPE = ncsv.TOPOLOGY_TYPE
+NUM_OF_NODES = cde.NUM_OF_NODES
+SEED_VALUE = cde.SEED_VALUE
 MIN_DIST_NODES = int(CFG_PARAM.get('min_dist_between_nodes', 20))
-SEED_VALUE = int(CFG_PARAM.get('seed', 0))
 NODE_COVERAGE = int(CFG_PARAM.get("nodes_coverage", '100'))
 NODE_BUFFER_SIZE = int(CFG_PARAM.get('node_buffer_size', 1))
-TOPOLOGY_TYPE = CFG_PARAM.get('topology', 'random')
 
 # Fetch simulation parameters
-PACKET_SIZE = int(CFG_PARAM.get("packet_size_bytes", 10))
 PACKET_LOSS = int(CFG_PARAM.get("packet_loss_percent", 0))
 CHANNEL_NUM = int(CFG_PARAM.get("channels", 2))
 TIMESLOT_NUM = int(CFG_PARAM.get("timeslots", 2))
-FINITE_FIELD = CFG_PARAM.get("fifi", "binary")
 TX_MODE = CFG_PARAM.get("tx_mode", "half_duplex")
 RX_MODE = CFG_PARAM.get("rx_mode", "multi")
 
@@ -68,12 +44,12 @@ ALGM_TYPE = CFG_PARAM.get("algm_type", "greedy")
 CFG_KODO = {
     "n_coverage": NODE_COVERAGE,
     "buf_size": NODE_BUFFER_SIZE,
-    "fifi": FINITE_FIELD,
-    "gen_size": NUM_OF_NODES,
-    "packet_size": PACKET_SIZE,
+    "fifi": cde.FINITE_FIELD,
+    "gen_size": cde.NUM_OF_NODES,
+    "packet_size": cde.PACKET_SIZE,
     "channels": CHANNEL_NUM,
     "timeslots": TIMESLOT_NUM,
-    "seed": SEED_VALUE,
+    "seed": cde.SEED_VALUE,
     "duplex": True if re.match("full", TX_MODE) else False,
     "rx_multi": True if re.match("multi", RX_MODE) else False
 }
@@ -138,8 +114,8 @@ def get_configs():
         "generation_time_ms": GEN_TIME,
         "action_time_ms": ACT_TIME,
         "topology": TOPOLOGY_TYPE,
-        "packet_size_bytes": PACKET_SIZE,
-        "finite_field": FINITE_FIELD,
+        "packet_size_bytes": cde.PACKET_SIZE,
+        "finite_field": cde.FINITE_FIELD,
         "SINR_loss_%": PACKET_LOSS,
         "channels": CHANNEL_NUM,
         "timeslots": TIMESLOT_NUM,
@@ -207,7 +183,7 @@ class NCSim:
 
         # IF RING TOPOLOGY
         if topology == "ring":
-            ring_radius = SCREEN_HEIGHT/4                           # Set the Ring Radius
+            ring_radius = ncsv.SCREEN_HEIGHT/4                           # Set the Ring Radius
             # Adjust Cursor starting position
             draw_cursor.setposition(0, int(-ring_radius-50))
             node_spacing = 360/NUM_OF_NODES                         # Set Node Spacing
@@ -222,10 +198,10 @@ class NCSim:
         # IF CHAIN TOPOLOGY
         elif topology == "chain":
             # Set the Chain Length
-            chain_length = SCREEN_WIDTH
+            chain_length = ncsv.SCREEN_WIDTH
             # Adjust Cursor starting position
-            draw_cursor.setposition(-(chain_length/2) + SCREEN_MARGIN,
-                                    -(chain_length/2) + SCREEN_MARGIN)
+            draw_cursor.setposition(-(chain_length/2) + ncsv.SCREEN_MARGIN,
+                                    -(chain_length/2) + ncsv.SCREEN_MARGIN)
             # To draw diagonally
             draw_cursor.left(45)
             # Loop over the Nodes and Set Positions
@@ -268,31 +244,31 @@ class NCSim:
             # distributes the nodes inside the 4 quarters
             def distribute_nodes(quarters_areas):
                 # Loop over the Nodes and Set Positions
-                for index, node in enumerate(self.nodes):
-                    success = False
+                for ix, nx in enumerate(self.nodes):
+                    _success = False
                     counter = 0
-                    while not success:
-                        success = True
+                    while not _success:
+                        _success = True
                         counter = counter + 1
                         # Randomly Set the Node X Position, in specific Quarter
                         x_position = np.random.randint(
-                            quarters_areas[index % 4]["X_RANGE"][LOW_VALUE],
-                            quarters_areas[index % 4]["X_RANGE"][HIGH_VALUE])
+                            quarters_areas[ix % 4]["X_RANGE"][LOW_VALUE],
+                            quarters_areas[ix % 4]["X_RANGE"][HIGH_VALUE])
                         # Randomly Set the Node Y Position, in specific Quarter
                         y_position = np.random.randint(
-                            quarters_areas[index % 4]["Y_RANGE"][LOW_VALUE],
-                            quarters_areas[index % 4]["Y_RANGE"][HIGH_VALUE])
+                            quarters_areas[ix % 4]["Y_RANGE"][LOW_VALUE],
+                            quarters_areas[ix % 4]["Y_RANGE"][HIGH_VALUE])
                         # Locate Node where Cursor Stops
-                        node.place_node((x_position, y_position))
+                        nx.place_node((x_position, y_position))
                         # Check if there is overlapping nodes
-                        for neighbor in self.nodes:
+                        for _neighbor in self.nodes:
                             # Check until reaching node index
-                            if neighbor == node:
+                            if _neighbor == nx:
                                 break
-                            if node.distance(neighbor) < MIN_DIST_NODES:
+                            if nx.distance(_neighbor) < MIN_DIST_NODES:
                                 trace.warning(
-                                    f"node {node.node_id} was overlapping node {neighbor.node_id}")
-                                success = False
+                                    f"node {nx.node_id} was overlapping node {_neighbor.node_id}")
+                                _success = False
                         if counter == 1000:
                             trace.warning(
                                 f"failed to create topology")
@@ -319,14 +295,14 @@ class NCSim:
                 return answer+1
 
             # Set the Chain Length
-            chain_v_length = SCREEN_HEIGHT - HEAD_MARGIN - MESSAGE_MARGIN
-            chain_h_length = SCREEN_WIDTH - SCREEN_MARGIN * 2
+            chain_v_length = ncsv.SCREEN_HEIGHT - ncsv.HEAD_MARGIN - ncsv.MESSAGE_MARGIN
+            chain_h_length = ncsv.SCREEN_WIDTH - ncsv.SCREEN_MARGIN * 2
             chains = np.array_split(self.nodes, nearest_square(NUM_OF_NODES))
             for index, chain in enumerate(chains):
                 v_move = (chain_v_length/len(chains)) * index
                 # Adjust Cursor starting position
-                draw_cursor.setposition(-(chain_h_length/2 + SCREEN_MARGIN),
-                                        (chain_v_length/2) - v_move - MESSAGE_MARGIN)
+                draw_cursor.setposition(-(chain_h_length/2 + ncsv.SCREEN_MARGIN),
+                                        (chain_v_length/2) - v_move - ncsv.MESSAGE_MARGIN)
                 # Loop over the Nodes and Set Positions
                 for node in chain:
                     # Move Cursor forward by node spacing value
@@ -339,8 +315,8 @@ class NCSim:
         elif topology == "star":
             # Node 0 is a central node reaching all other nodes
             self.nodes[0].place_node((0, 0))
-            self.nodes[0].coverage = MAX_COVERAGE = SCREEN_HEIGHT / \
-                2 - SCREEN_MARGIN  # Set the Ring Radius
+            self.nodes[0].coverage = MAX_COVERAGE = ncsv.SCREEN_HEIGHT / \
+                2 - ncsv.SCREEN_MARGIN  # Set the Ring Radius
 
             # Adjust Cursor starting position
             draw_cursor.setposition(0, int(-MAX_COVERAGE-50))
@@ -420,10 +396,10 @@ class NCSim:
         for node in np.random.permutation(self.nodes):
             self.screen.visual_send_packet(node, node.get_neighbors())
             self.screen.screen_refresh()
-            time.sleep(SCREEN_REFRESH_TIME)
+            time.sleep(ncsv.SCREEN_REFRESH_TIME)
 
             # broadcast the message
-            cde.node_broadcast(node, node.get_neighbors(), r, logger=kpi)
+            cde.node_broadcast(node, node.get_neighbors(), r, _logger=kpi)
             # update tx counter
             node.update_tx_counter()
             self.screen.clear_send_packets()
@@ -434,7 +410,7 @@ class NCSim:
             node.sense_spectrum(PACKET_LOSS, logger=trace)
             packets = node.get_rx_packets()
             if packets:
-                cde.node_receive(node, packets, r, logger=kpi)
+                cde.node_receive(node, packets, r, _logger=kpi)
 
     def run_round(self, g, r):
         # wait between generations
@@ -502,7 +478,7 @@ class NCSim:
 
     def end_round(self, round_num):
         # calculate data for the round
-        aods = cde.calculate_aod(round_num, logger=kpi)
+        aods = cde.calculate_aod(round_num, _logger=kpi)
         ranks = [cde.get_ranks(n.node_id) for n in self.nodes]
         stats = [n.print_aod_percentage(
             round_num, aods[i], ranks[i]) for i, n in enumerate(self.nodes)]

@@ -1,6 +1,5 @@
 from turtle import Turtle
 import numpy as np
-import random
 
 
 class Node(Turtle):
@@ -23,7 +22,17 @@ class Node(Turtle):
         self.duplex = kwargs.get("duplex", False)
         self.rx_multi = kwargs.get("rx_multi", True)
 
-        self.clear_counters()
+        # init counters
+        self.aod = 0
+        self.rank = 0
+        self.missing = 0
+        self.tx_count = 0
+        self.total_rx_count = 0
+        self.success_rx_count = 0
+        self.collision_count = 0
+        self.rx_missed_count = 0
+        self.ig_msgs_count = 0
+        self.packet_loss_count = 0
 
     def clear_counters(self):
         self.aod = 0

@@ -155,8 +155,8 @@ class MouseClick:
     def left_click(self, x, y):
         self.aMenu.unpost()
         self.bMenu.unpost()
-        x_root = self.root.winfo_pointerx()
-        y_root = self.root.winfo_pointery()
+        # x_root = self.root.winfo_pointerx()
+        # y_root = self.root.winfo_pointery()
         if self.get_node((x, y)):
             self.focus_node = self.get_node((x, y))
 
@@ -167,7 +167,7 @@ def create_graph(root):
     canvas = FigureCanvasTkAgg(fig, master=root)
     canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
     canvas.draw()
-    return (ax, canvas)
+    return ax, canvas
 
 
 def display_data(frame, values, headers=None, assert_empty=False):
@@ -242,7 +242,7 @@ class Controller:
         # create scrollbar
         scroll = ttk.Scrollbar(root)
         scroll.pack(side=tk.RIGHT, fill=tk.Y)
-        # create treeview
+        # create tree view
         tree = ttk.Treeview(root, show='headings', height=7,
                             yscrollcommand=scroll.set)
         scroll.config(command=tree.yview)
@@ -277,13 +277,13 @@ class Controller:
         top_pane = ttk.PanedWindow(all_pane, orient=tk.HORIZONTAL)
         bottom_pane = ttk.PanedWindow(all_pane, orient=tk.HORIZONTAL)
 
-        # Create top labelframes
+        # Create top label frames
         self.f_config = ttk.Labelframe(top_pane, text='Configurations')
         self.f_current = ttk.Labelframe(top_pane, text='Current run')
 
         # Show Configurations to reserve size
         display_data(self.f_config, list(self.configs.values()),
-                          list(self.configs.keys()))
+                     list(self.configs.keys()))
         top_pane.add(self.f_config, weight=20)
         top_pane.add(self.f_current, weight=52)
         # top_pane.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -355,7 +355,7 @@ class Controller:
         ax.set_xlabel('Nodes')
         ax.set_xticks(n_range)
         ax.set_ylabel('Availability of Data percentage (%)')
-        ax.set_ylim(0, 100)  # set the ylim to bottom, top
+        ax.set_ylim(0, 100)  # set the y lim to bottom, top
         ax.bar(n_range, arr)
         canvas.draw()
 
@@ -369,7 +369,7 @@ class Controller:
         ax.set_xlabel(f'Num of transmissions {r_current}')
         ax.set_xticks(x_range)
         ax.set_ylabel('Avg ranks of decoders')
-        # set the ylim to bottom, top
+        # set the y lim to bottom, top
         ax.set_yticks(np.arange(self.num_nodes + 1))
         ax.margins(x=0)
         ax.grid()
@@ -571,5 +571,6 @@ class Controller:
         try:
             self.root.destroy()
             self.root.quit()
-        except:
+        except Exception as e:
+            print(e)
             print("bye bye")
