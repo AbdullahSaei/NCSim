@@ -1,4 +1,23 @@
+# You need to build the KODO Python bindings from source.
+#
+# First, clone the project:
+# 
+# git clone git@github.com:steinwurf/kodo-python.git
+#
+# Configure and build the project:
+# 
+# cd kodo-python
+# python3 waf configure
+# python3 waf build
+#
+# Also, you need to install this library 
+#
+# sudo apt-get install libatlas-base-dev
+#
+# To install required pip libraries
+#
 # python3 -m pip install -r requirements.txt
+#
 
 #python3-tk
 numpy~=1.20.3
