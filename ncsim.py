@@ -125,6 +125,11 @@ def get_configs():
         "periodic_Nth": ALGM_N
     }
 
+def tx_algorithm():
+    if ALGM_TYPE.lower() == "heuristic":
+        cde.heuristic_algorithm()
+    elif ALGM_TYPE.lower() == "greedy":
+        cde.greedy_algorithm()
 
 class NCSim:
     def __init__(self):
@@ -398,10 +403,27 @@ class NCSim:
             self.screen.screen_refresh()
             time.sleep(ncsv.SCREEN_REFRESH_TIME)
 
-            # broadcast the message
-            cde.node_broadcast(node, node.get_neighbors(), r, _logger=kpi)
+            # Choose time and frequency channels
+            freq = np.random.choice(range(node.ch_num))
+            timeslot = np.random.choice(range(node.ts_num))
+            # set the random chosen channel
+            node.set_sending_channel(freq, timeslot)
+
+            # algorthim tx round
+            if ALGM_TYPE.lower() != "simple" and r % ALGM_N == 0:
+                if ALGM_TYPE.lower() == "heuristic":
+                    cde.tx_heuristic_algorithm()
+
+                # Hybrid (heuristic and greedy) algorithm can take place
+                if ALGM_TYPE.lower() == "greedy":
+                    cde.tx_greedy_algorithm()
+            else:
+                # broadcast the message
+                cde.node_broadcast(node, node.get_neighbors(), r, _logger=kpi)
+        
             # update tx counter
             node.update_tx_counter()
+            #
             self.screen.clear_send_packets()
 
     def rx_phase(self, r):

@@ -30,13 +30,13 @@
     "min_dist_between_nodes": 50,
     "nodes_coverage": 100,
     "packet_size_bytes": 100,
-    "fifi":"binary16",
+    "fifi":"binary8",
     "packet_loss_percent": 0,
     "channels": 5,
     "timeslots": 5,
     "tx_mode": "half_duplex",
     "rx_mode": "single",
     "algm_n": 1,
-    "algm_type": "Greedy"
+    "algm_type": "Simple"
   }
 }

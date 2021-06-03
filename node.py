@@ -198,6 +198,9 @@ class Node(Turtle):
         else:
             print("node {:2} no buffer".format(self.node_id))
             return None
+    
+    def set_sending_channel(self, freq, timeslot):
+        self.sending_channel = (freq, timeslot)
 
     def print_aod_percentage(self, r_num, aod, ranks):
         self.aod = aod

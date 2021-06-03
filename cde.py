@@ -82,16 +82,13 @@ def kodo_init():
     data_out = []
 
     for i in range(NUM_OF_NODES):
-        # init encoder
-        encoder = kodo.RLNCEncoder(field, symbols, symbol_size)
         seed = np.random.randint(SEED_VALUE)
-        encoder.set_seed(seed)
 
         # init decoder
         decoder = kodo.RLNCDecoder(field, symbols, symbol_size)
         decoder.set_seed(seed)
         decoder.set_log_callback(callback_function)
-        nodes.append([i, encoder, decoder])
+        nodes.append([i, decoder])
 
 
 def generate_data():
@@ -103,7 +100,7 @@ def generate_data():
     _alphabet_list = [char for char in _alphabet]
 
     # Generate random message
-    for i, encoder, decoder in nodes:
+    for i, decoder in nodes:
         msg = "IAM{:02}X".format(i) + "".join(
             np.random.choice(_alphabet_list, size=PACKET_SIZE - 6))
         data = bytearray(msg, encoding="utf-8")
@@ -112,21 +109,14 @@ def generate_data():
         data_out.append(data_rx)
 
     # setup encoders and decoders
-    for i, encoder, decoder in nodes:
+    for i, decoder in nodes:
         decoder.set_symbols_storage(data_out[i])
-        encoder.set_symbol_storage(data_in[i], i)
-        pack = encoder.produce_systematic_symbol(i)
-        decoder.consume_systematic_symbol(pack, i)
+        decoder.consume_systematic_symbol(data_in[i], i)
 
 
 def node_broadcast(node, neighbours, rnd, _logger):
-    # choose channel
-    freq = np.random.choice([*range(node.ch_num)])
-    time = np.random.choice([*range(node.ts_num)])
-    node.sending_channel = (freq, time)
-
     # get kodo encoder and decoder
-    i, encoder, decoder = nodes[node.node_id]
+    i, decoder = nodes[node.node_id]
 
     # produce packet to broadcast
     pack = decoder.produce_payload()
@@ -146,9 +136,33 @@ def node_broadcast(node, neighbours, rnd, _logger):
         n.access_rx_buffer(i, pack, node.sending_channel)
     # print("")
 
+def tx_greedy_algorithm(node, neighbours, rnd, _logger):
+    # get kodo encoder and decoder
+    i, decoder = nodes[node.node_id]
+
+    # produce packet to broadcast
+    pack = decoder.produce_payload()
+
+    # log data
+    # log message and channel
+    _logger.info(
+        "node {:2},tx{:2},broadcast to {} nodes".format(
+            i, rnd, len(neighbours)))
+
+    # print("\nDecoder rank: {}/{}".format(decoder.rank(), symbols))
+    # print(f"Node {i} sending to ", end='')
+    for n in neighbours:
+        # get kodo encoder and decoder of the neighbor
+        # n_i, n_encoder, n_decoder = nodes[n.node_id]
+        # print(f"{n_i:02} ", end='')
+        n.access_rx_buffer(i, pack, node.sending_channel)
+    # print("")
+
+def tx_heuristic_algorithm():
+    pass
 
 def node_receive(node, packets, rnd, _logger):
-    i, encoder, decoder = nodes[node.node_id]
+    i, decoder = nodes[node.node_id]
     # check if data in buffer
     log_msg = "node {:2},rx{:2},".format(i, rnd)
     if len(packets) > 0:
@@ -182,7 +196,7 @@ def calculate_aod(rnd="i", _logger=None):
 
 
 def get_ranks(index):
-    i, encoder, decoder = nodes[index]
+    i, decoder = nodes[index]
     decoder.update_symbol_status()
     ranks = (
                     decoder.rank(),
