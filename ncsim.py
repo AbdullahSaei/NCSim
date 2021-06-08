@@ -125,11 +125,6 @@ def get_configs():
         "periodic_Nth": ALGM_N
     }
 
-def tx_algorithm():
-    if ALGM_TYPE.lower() == "heuristic":
-        cde.heuristic_algorithm()
-    elif ALGM_TYPE.lower() == "greedy":
-        cde.greedy_algorithm()
 
 class NCSim:
     def __init__(self):
@@ -149,16 +144,16 @@ class NCSim:
         # create right click listener
         self.mclick = MouseClick(self.screen.root, self.nodes)
         # attach popup to window
-        self.screen.set_click_listener(
+        ncsv.set_click_listener(
             fun=self.mclick.left_click, btn=1, add=True)
         # attach left click
-        self.screen.set_click_listener(fun=self.mclick.popup, btn=3, add=True)
+        ncsv.set_click_listener(fun=self.mclick.popup, btn=3, add=True)
         summ_header = [*self.nodes[0].get_statistics(0)]
         # Init controller window
         self.ctrl = Controller(
             self.screen.root, summ_header, auto_run=RUN_ALL, 
             auto_full=AUTO_RUN_TO_FULL, **get_configs())
-        cde.set_logger(kodo_log)
+
         print("init done")
 
     def create_nodes(self):

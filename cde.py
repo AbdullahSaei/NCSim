@@ -56,23 +56,9 @@ field = fifi.get(FINITE_FIELD, "binary8")
 field_max = 2 ** int(fifi_num.get(FINITE_FIELD, 8))
 symbols = NUM_OF_NODES
 symbol_size = PACKET_SIZE
-logger = None
 
 # Pseudo random seed
 np.random.seed(SEED_VALUE)
-
-
-# We want to follow the decoding process step-by-step
-def set_logger(log):
-    global logger
-    logger = log
-
-
-def callback_function(zone, message):
-    if logger:
-        logger.info(
-            f"*******\n{zone}\n*******\n==========\n{message}\n==========\n")
-
 
 # Global scope Create list of encoder and decoder triples
 nodes = []
@@ -191,26 +177,22 @@ def node_receive(node, packets, rnd, _logger):
             n_decoder, *_ = nodes[src]
 
             # greedy decoder
-            g_coef = bytearray([np.random.randint(1, field_max) if n_decoder.is_symbol_pivot(
+            g_coe = bytearray([np.random.randint(1, field_max) if n_decoder.is_symbol_pivot(
                 sym) else 0 for sym in range(NUM_OF_NODES)])
-            g_pack = master_encoder.produce_symbol(g_coef)
-            g_decoder.consume_symbol(g_pack, g_coef)
+            g_pack = master_encoder.produce_symbol(g_coe)
+            g_decoder.consume_symbol(g_pack, g_coe)
 
             # heuristic decoder
-            h_coef = bytearray([np.random.randint(1, field_max) if s_decoder.is_symbol_missing(
+            h_coe = bytearray([np.random.randint(1, field_max) if s_decoder.is_symbol_missing(
                 sym) and n_decoder.is_symbol_pivot(sym) else 0 for sym in range(NUM_OF_NODES)])
-            h_pack = master_encoder.produce_symbol(h_coef)
-            h_decoder.consume_symbol(h_pack, h_coef)
+            h_pack = master_encoder.produce_symbol(h_coe)
+            h_decoder.consume_symbol(h_pack, h_coe)
 
             # simple decoder
             s_decoder.consume_payload(p)
 
         ranks = get_ranks(node.node_id)
-        alg_ranks = (s_decoder.rank(), g_decoder.rank(), h_decoder.rank())
-        log_str = log_msg + "rank/part/decoded/missing/total {}/{}/{}/{}/{}".format(
-            *ranks)
-        _logger.info(log_str)
-        _logger.info(log_msg + "Simple {} Greedy {} Heuristic {}".format(*alg_ranks))
+        _logger.info(log_msg + "Ranks: Simple {} Greedy {} Heuristic {}".format(*ranks))
 
     else:
         log_msg += "no buffered packets"
@@ -233,13 +215,13 @@ def calculate_aod(rnd="i", _logger=None):
 
 
 def get_ranks(index):
-    decoder, g_decoder, h_decoder = nodes[index]
-    decoder.update_symbol_status()
+    s_decoder, g_decoder, h_decoder = nodes[index]
+    s_decoder.update_symbol_status()
+    g_decoder.update_symbol_status()
+    h_decoder.update_symbol_status()
     ranks = (
-        decoder.rank(),
-        decoder.symbols_partially_decoded(),
-        decoder.symbols_decoded(),
-        decoder.symbols_missing(),
-        decoder.symbols()
+        s_decoder.rank(),
+        g_decoder.rank(),
+        h_decoder.rank()       
     )
     return ranks

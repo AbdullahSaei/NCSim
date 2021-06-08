@@ -40,8 +40,12 @@ NUM_OF_NODES = int(CFG_PARAM.get("nodes_num", '10'))
 TOPOLOGY_TYPE = CFG_PARAM.get('topology', 'random')
 
 
+def set_click_listener(**kwarg):
+    onscreenclick(**kwarg)
+
+
 class NCSimVisualizer:
-    def __init__(self, CFG_OS):
+    def __init__(self, cfg_os):
         # Create Screen Object
         self.screen = Screen()
 
@@ -51,11 +55,13 @@ class NCSimVisualizer:
         LOGO_LINUX_PATH = "@assets/favicon_linux.xbm"
 
         # Use the same Tk root with turtle:
+        # noinspection PyProtectedMember
         assert isinstance(self.screen._root, tk.Tk)  # True
+        # noinspection PyProtectedMember
         self.root = self.screen._root
         self.root.title("Network Coding Simulator")
 
-        if CFG_OS.lower() == "linux":
+        if cfg_os.lower() == "linux":
             self.root.iconbitmap(LOGO_LINUX_PATH)
         else:
             self.root.iconbitmap(LOGO_PATH)
@@ -77,11 +83,11 @@ class NCSimVisualizer:
         self.msg_cursor.color("midnight blue")
 
         # Create Screen coverage Cursor
-        self.cvrg_cursur = Turtle()
-        self.cvrg_cursur.ht()
-        self.cvrg_cursur.penup()
-        self.cvrg_cursur.pensize(2)
-        self.cvrg_cursur.color("saddle brown")
+        self.coverage_cursor = Turtle()
+        self.coverage_cursor.ht()
+        self.coverage_cursor.penup()
+        self.coverage_cursor.pensize(2)
+        self.coverage_cursor.color("saddle brown")
 
         # Create Screen Send Packet Cursor
         self.snd_pckt = Turtle()
@@ -175,29 +181,26 @@ class NCSimVisualizer:
         self.snd_pckt.pu()
 
     def show_coverage(self, node):
-        self.cvrg_cursur.goto(node.xcor(), node.ycor() - node.coverage)
-        self.cvrg_cursur.pendown()
-        self.cvrg_cursur.circle(node.coverage)
-        self.cvrg_cursur.penup()
-        self.cvrg_cursur.goto(node.pos())
+        self.coverage_cursor.goto(node.xcor(), node.ycor() - node.coverage)
+        self.coverage_cursor.pendown()
+        self.coverage_cursor.circle(node.coverage)
+        self.coverage_cursor.penup()
+        self.coverage_cursor.goto(node.pos())
 
     def hide_coverage(self):
-        self.cvrg_cursur.pendown()
-        self.cvrg_cursur.clear()
-        self.cvrg_cursur.penup()
+        self.coverage_cursor.pendown()
+        self.coverage_cursor.clear()
+        self.coverage_cursor.penup()
 
     def screen_refresh(self):
         self.screen.update()
-
-    def set_click_listener(self, **kwarg):
-        onscreenclick(**kwarg)
 
     def mainloop(self):
         while True:
             try:
                 self.root.update()
                 self.root.update_idletasks()
-            except Exception as e:
-                print(e)
+            except Exception as exp:
+                print(exp)
                 print("bye")
                 break

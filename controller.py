@@ -1,12 +1,13 @@
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from statistics import mean
+import seaborn as sns
+import matplotlib.pyplot as plt
 import tkinter as tk
 import tkinter.ttk as ttk
 from turtle import Turtle
 import matplotlib
+
 plt.style.use('seaborn-deep')
 matplotlib.use('TkAgg')
 
@@ -18,6 +19,16 @@ def setup_turtles():
     tur.color("saddle brown")
     tur.pensize(2)
     return tur
+
+
+def draw_arrow(snd_pckt):
+    # Drawing arrow head
+    snd_pckt.left(45)
+    snd_pckt.backward(10)
+    snd_pckt.forward(10)
+    snd_pckt.right(90)
+    snd_pckt.backward(10)
+    snd_pckt.penup()
 
 
 class MouseClick:
@@ -87,13 +98,7 @@ class MouseClick:
             snd_pckt.pendown()
             snd_pckt.fd(rx_node.distance(snd_pckt) - 11)
 
-            # Drawing arrow head
-            snd_pckt.left(45)
-            snd_pckt.backward(10)
-            snd_pckt.forward(10)
-            snd_pckt.right(90)
-            snd_pckt.backward(10)
-            snd_pckt.penup()
+            draw_arrow(snd_pckt)
 
     def hide_neighbors(self):
         _, tx_node = self.focus_node
@@ -122,13 +127,7 @@ class MouseClick:
             snd_pckt.pendown()
             snd_pckt.fd(node.distance(snd_pckt) - 11)
 
-            # Drawing arrow head
-            snd_pckt.left(45)
-            snd_pckt.backward(10)
-            snd_pckt.forward(10)
-            snd_pckt.right(90)
-            snd_pckt.backward(10)
-            snd_pckt.penup()
+            draw_arrow(snd_pckt)
 
     def popup(self, x, y):
         # remove other menu lists
@@ -149,7 +148,7 @@ class MouseClick:
         dis = [n.distance(pos) for n in self.nodes]
         nearest_node = self.nodes[dis.index(min(dis))]
         self.focus_node = (dis.index(min(dis)), nearest_node) if (
-                min(dis) < 15) else None
+            min(dis) < 15) else None
         return self.focus_node
 
     def left_click(self, x, y):
@@ -305,7 +304,7 @@ class Controller:
         self.headers_current = ["Round", "Avg Ranks", "Avg AoD",
                                 "Max AoD", "Min AoD", "Nodes 100%", "Nodes <50%"]
         vals = [0 for _ in range(self.num_nodes)]
-        ranks = [(1, 1, 1, 1, 1) for _ in range(self.num_nodes)]
+        ranks = [(1, 1, 1) for _ in range(self.num_nodes)]
         stats = None
         self.data = [vals, ranks, stats]
         # Show data
@@ -319,8 +318,8 @@ class Controller:
 
         # prepare data
         arr = np.array(vals)
-        _ranks, *_ = zip(*ranks)
-        avg_ranks = mean(_ranks)
+        s_rank, g_rank, h_rank = zip(*ranks)
+        avg_ranks = np.mean(s_rank)
         self.avg_rank.append(avg_ranks)
 
         # Calculate full done and half done nodes
@@ -330,7 +329,7 @@ class Controller:
         # headers_current = ["Round", "Avg Ranks",
         # "Max AoD", "Avg AoD", "Nodes 100%", "Nodes <50%"]
         run_values = [f"{r_curr}/{r_num}", f"{avg_ranks:.2f}/{self.num_nodes}",
-                      f"{arr.mean():.2f}%", f"{arr.max():.2f}%", f"{arr.min():.2f}%",
+                      f"{arr.mean():.2f}%", f"{np.max(arr):.2f}%", f"{np.min(arr):.2f}%",
                       f"{f_dn}/{self.num_nodes}", f"{h_dn}/{self.num_nodes}"]
         display_data(self.f_current, run_values)
 
@@ -365,7 +364,8 @@ class Controller:
         # Graphs update
         ax.clear()  # clear axes from previous plot
         ax.plot(arr)
-        ax.set_title(f'Average ranks of {self.num_nodes} decoders Vs num of transmissions')
+        ax.set_title(
+            f'Average ranks of {self.num_nodes} decoders Vs num of transmissions')
         ax.set_xlabel(f'Num of transmissions {r_current}')
         ax.set_xticks(x_range)
         ax.set_ylabel('Avg ranks of decoders')
@@ -399,7 +399,7 @@ class Controller:
         # Calculate ratio
         reception_ratio = df['rx_success'].sum() / df['rx_total'].sum() * 100
         collision_ratio = df['rx_collisions'].sum() / \
-                          df['rx_total'].sum() * 100
+            df['rx_total'].sum() * 100
         ignored_ratio = df['rx_ignored'].sum() / df['rx_total'].sum() * 100
         missed_ratio = df['rx_missed'].sum() / df['rx_total'].sum() * 100
         pathloss_ratio = df['rx_SINR_loss'].sum() / df['rx_total'].sum() * 100
@@ -424,8 +424,8 @@ class Controller:
             tv.move(k, '', index)
 
         # reverse sort next time
-        tv.heading(col, command=lambda _col=col:
-        self.treeview_sort_column(tv, _col, not reverse))
+        tv.heading(col, command=lambda _col=col: self.treeview_sort_column(
+            tv, _col, not reverse))
 
     def new_generation_cleanup(self, clear_frames=True):
         # Clean up
