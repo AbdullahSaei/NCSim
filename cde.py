@@ -41,11 +41,19 @@ fifi = {
     "binary16": kodo.field.binary16,
     "binary8": kodo.field.binary8,
     "binary4": kodo.field.binary4,
-    "binary": kodo.field.binary,
+    "binary": kodo.field.binary
+}
+
+fifi_num = {
+    "binary16": 16,
+    "binary8": 8,
+    "binary4": 4,
+    "binary": 2
 }
 
 # Configure kodo parameters
-field = fifi.get(FINITE_FIELD, "binary")
+field = fifi.get(FINITE_FIELD, "binary8")
+field_max = 2 ** int(fifi_num.get(FINITE_FIELD, 8))
 symbols = NUM_OF_NODES
 symbol_size = PACKET_SIZE
 logger = None
@@ -62,36 +70,61 @@ def set_logger(log):
 
 def callback_function(zone, message):
     if logger:
-        logger.info(f"*******\n{zone}\n*******\n==========\n{message}\n==========\n")
+        logger.info(
+            f"*******\n{zone}\n*******\n==========\n{message}\n==========\n")
 
 
 # Global scope Create list of encoder and decoder triples
 nodes = []
 data_in = []
-data_out = []
+simple_data_out = []
+greedy_data_out = []
+heuristic_data_out = []
+
+# Master encoder
+master_data_in = []
+master_encoder = kodo.RLNCEncoder(field, symbols, symbol_size)
 
 
 def kodo_init():
     # Create list of encoder and decoder triples
     global nodes
     global data_in
-    global data_out
+    global simple_data_out
+    global greedy_data_out
+    global heuristic_data_out
+    global master_data_in
 
     nodes = []
     data_in = []
-    data_out = []
+    simple_data_out = []
+    greedy_data_out = []
+    heuristic_data_out = []
+    master_data_in = []
 
-    for i in range(NUM_OF_NODES):
+    # init one encoder
+    master_encoder.set_seed(SEED_VALUE)
+
+    for _ in range(NUM_OF_NODES):
         seed = np.random.randint(SEED_VALUE)
 
-        # init decoder
-        decoder = kodo.RLNCDecoder(field, symbols, symbol_size)
-        decoder.set_seed(seed)
-        decoder.set_log_callback(callback_function)
-        nodes.append([i, decoder])
+        # init decoders
+        simple_decoder = kodo.RLNCDecoder(field, symbols, symbol_size)
+        simple_decoder.set_seed(seed)
+
+        greedy_decoder = kodo.RLNCDecoder(field, symbols, symbol_size)
+        greedy_decoder.set_seed(seed)
+
+        heuristic_decoder = kodo.RLNCDecoder(field, symbols, symbol_size)
+        heuristic_decoder.set_seed(seed)
+
+        # decoder.set_log_callback(callback_function)
+        nodes.append([simple_decoder, greedy_decoder, heuristic_decoder])
 
 
 def generate_data():
+    global master_data_in
+
     # Always clear when new generation
     kodo_init()
 
@@ -100,32 +133,43 @@ def generate_data():
     _alphabet_list = [char for char in _alphabet]
 
     # Generate random message
-    for i, decoder in nodes:
+    for i, decoders, *_ in enumerate(nodes):
+        s_decoder, g_decoder, h_decoder = decoders
         msg = "IAM{:02}X".format(i) + "".join(
             np.random.choice(_alphabet_list, size=PACKET_SIZE - 6))
-        data = bytearray(msg, encoding="utf-8")
-        data_rx = bytearray(decoder.block_size())
-        data_in.append(data)
-        data_out.append(data_rx)
+        data_in.append(bytearray(msg, encoding="utf-8"))
+        simple_data_out.append(bytearray(s_decoder.block_size()))
+        greedy_data_out.append(bytearray(g_decoder.block_size()))
+        heuristic_data_out.append(bytearray(h_decoder.block_size()))
 
     # setup encoders and decoders
-    for i, decoder in nodes:
-        decoder.set_symbols_storage(data_out[i])
-        decoder.consume_systematic_symbol(data_in[i], i)
+    master_data_in = bytearray(b"".join(data_in))
+    master_encoder.set_symbols_storage(master_data_in)
+
+    for i, node in enumerate(nodes):
+        s_decoder, g_decoder, h_decoder = node
+        s_decoder.set_symbols_storage(simple_data_out[i])
+        s_decoder.consume_systematic_symbol(data_in[i], i)
+
+        g_decoder.set_symbols_storage(greedy_data_out[i])
+        g_decoder.consume_systematic_symbol(data_in[i], i)
+
+        h_decoder.set_symbols_storage(heuristic_data_out[i])
+        h_decoder.consume_systematic_symbol(data_in[i], i)
 
 
 def node_broadcast(node, neighbours, rnd, _logger):
     # get kodo encoder and decoder
-    i, decoder = nodes[node.node_id]
+    s_decoder, *_ = nodes[node.node_id]
 
     # produce packet to broadcast
-    pack = decoder.produce_payload()
+    pack = s_decoder.produce_payload()
 
     # log data
     # log message and channel
     _logger.info(
         "node {:2},tx{:2},broadcast to {} nodes".format(
-            i, rnd, len(neighbours)))
+            node.node_id, rnd, len(neighbours)))
 
     # print("\nDecoder rank: {}/{}".format(decoder.rank(), symbols))
     # print(f"Node {i} sending to ", end='')
@@ -133,47 +177,40 @@ def node_broadcast(node, neighbours, rnd, _logger):
         # get kodo encoder and decoder of the neighbor
         # n_i, n_encoder, n_decoder = nodes[n.node_id]
         # print(f"{n_i:02} ", end='')
-        n.access_rx_buffer(i, pack, node.sending_channel)
+        n.access_rx_buffer(node.node_id, pack, node.sending_channel)
     # print("")
 
-def tx_greedy_algorithm(node, neighbours, rnd, _logger):
-    # get kodo encoder and decoder
-    i, decoder = nodes[node.node_id]
-
-    # produce packet to broadcast
-    pack = decoder.produce_payload()
-
-    # log data
-    # log message and channel
-    _logger.info(
-        "node {:2},tx{:2},broadcast to {} nodes".format(
-            i, rnd, len(neighbours)))
-
-    # print("\nDecoder rank: {}/{}".format(decoder.rank(), symbols))
-    # print(f"Node {i} sending to ", end='')
-    for n in neighbours:
-        # get kodo encoder and decoder of the neighbor
-        # n_i, n_encoder, n_decoder = nodes[n.node_id]
-        # print(f"{n_i:02} ", end='')
-        n.access_rx_buffer(i, pack, node.sending_channel)
-    # print("")
-
-def tx_heuristic_algorithm():
-    pass
 
 def node_receive(node, packets, rnd, _logger):
-    i, decoder = nodes[node.node_id]
+    s_decoder, g_decoder, h_decoder = nodes[node.node_id]
     # check if data in buffer
-    log_msg = "node {:2},rx{:2},".format(i, rnd)
-    if len(packets) > 0:
-        for p in packets:
-            decoder.consume_payload(p)
+    log_msg = "node {:2},rx{:2},".format(node.node_id, rnd)
 
-        ranks = get_ranks(i)
-        
-        log_msg += "rank/part/decoded/missing/total {}/{}/{}/{}/{}".format(
+    if len(packets) > 0:
+        for src, p in packets:
+            n_decoder, *_ = nodes[src]
+
+            # greedy decoder
+            g_coef = bytearray([np.random.randint(1, field_max) if n_decoder.is_symbol_pivot(
+                sym) else 0 for sym in range(NUM_OF_NODES)])
+            g_pack = master_encoder.produce_symbol(g_coef)
+            g_decoder.consume_symbol(g_pack, g_coef)
+
+            # heuristic decoder
+            h_coef = bytearray([np.random.randint(1, field_max) if s_decoder.is_symbol_missing(
+                sym) and n_decoder.is_symbol_pivot(sym) else 0 for sym in range(NUM_OF_NODES)])
+            h_pack = master_encoder.produce_symbol(h_coef)
+            h_decoder.consume_symbol(h_pack, h_coef)
+
+            # simple decoder
+            s_decoder.consume_payload(p)
+
+        ranks = get_ranks(node.node_id)
+        alg_ranks = (s_decoder.rank(), g_decoder.rank(), h_decoder.rank())
+        log_str = log_msg + "rank/part/decoded/missing/total {}/{}/{}/{}/{}".format(
             *ranks)
-        _logger.info(log_msg)
+        _logger.info(log_str)
+        _logger.info(log_msg + "Simple {} Greedy {} Heuristic {}".format(*alg_ranks))
 
     else:
         log_msg += "no buffered packets"
@@ -182,7 +219,7 @@ def node_receive(node, packets, rnd, _logger):
 
 def calculate_aod(rnd="i", _logger=None):
     aods = []
-    for i, data in enumerate(data_out):
+    for i, data in enumerate(simple_data_out):
         d_i = [data[x:x+PACKET_SIZE] for x in range(0, len(data), PACKET_SIZE)]
         aod = [1 if din == dout else 0 for din, dout in zip(data_in, d_i)]
         s = "{} " * len(aod)
@@ -196,13 +233,13 @@ def calculate_aod(rnd="i", _logger=None):
 
 
 def get_ranks(index):
-    i, decoder = nodes[index]
+    decoder, g_decoder, h_decoder = nodes[index]
     decoder.update_symbol_status()
     ranks = (
-                    decoder.rank(),
-                    decoder.symbols_partially_decoded(),
-                    decoder.symbols_decoded(),
-                    decoder.symbols_missing(),
-                    decoder.symbols()
-                )
+        decoder.rank(),
+        decoder.symbols_partially_decoded(),
+        decoder.symbols_decoded(),
+        decoder.symbols_missing(),
+        decoder.symbols()
+    )
     return ranks

@@ -409,17 +409,7 @@ class NCSim:
             # set the random chosen channel
             node.set_sending_channel(freq, timeslot)
 
-            # algorthim tx round
-            if ALGM_TYPE.lower() != "simple" and r % ALGM_N == 0:
-                if ALGM_TYPE.lower() == "heuristic":
-                    cde.tx_heuristic_algorithm()
-
-                # Hybrid (heuristic and greedy) algorithm can take place
-                if ALGM_TYPE.lower() == "greedy":
-                    cde.tx_greedy_algorithm()
-            else:
-                # broadcast the message
-                cde.node_broadcast(node, node.get_neighbors(), r, _logger=kpi)
+            cde.node_broadcast(node, node.get_neighbors(), r, _logger=kpi)
         
             # update tx counter
             node.update_tx_counter()

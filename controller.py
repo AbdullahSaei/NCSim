@@ -7,7 +7,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from turtle import Turtle
 import matplotlib
-
+plt.style.use('seaborn-deep')
 matplotlib.use('TkAgg')
 
 

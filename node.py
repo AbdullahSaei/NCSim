@@ -187,14 +187,14 @@ class Node(Turtle):
 
     def get_rx_packets(self):
         if len(self.rx_buffer) > 0:
-            packs = []
+            # packs = []
             s = ""
             for src, pack in self.rx_buffer:
                 s += "{:2} ".format(src)
-                packs.append(pack)
+                # packs.append(pack)
 
             # print("node {:2} received from ".format(self.node_id) + s)
-            return packs
+            return self.rx_buffer
         else:
             print("node {:2} no buffer".format(self.node_id))
             return None
