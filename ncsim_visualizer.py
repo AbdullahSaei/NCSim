@@ -56,9 +56,9 @@ class NCSimVisualizer:
 
         # Use the same Tk root with turtle:
         # noinspection PyProtectedMember
-        assert isinstance(self.screen._root, tk.Tk)  # True
+        # assert isinstance(self.screen._root, tk.Tk)  # True
         # noinspection PyProtectedMember
-        self.root = self.screen._root
+        self.root = self.screen.getcanvas().winfo_toplevel()
         self.root.title("Network Coding Simulator")
 
         if cfg_os.lower() == "linux":

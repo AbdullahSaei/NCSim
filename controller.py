@@ -10,6 +10,7 @@ import matplotlib
 
 plt.style.use('seaborn-deep')
 matplotlib.use('TkAgg')
+sns.set()
 
 
 def setup_turtles():
@@ -200,6 +201,25 @@ class Controller:
         self.configs = configs
         self.num_nodes = int(configs.get("num_nodes", 0))
 
+        # init inside __init__
+        self.df_nodes = pd.DataFrame(columns=self.summ_header)
+
+        # Create Header and Tx data
+        self.headers_current = ["Round", "Avg Ranks", "Avg AoD",
+                                "Max AoD", "Min AoD", "Nodes 100%", "Nodes <50%"]
+
+        # Data variable
+        vals = [0 for _ in range(self.num_nodes)]
+        ranks = [(1, 1, 1) for _ in range(self.num_nodes)]
+        stats = None
+        self.data = [vals, ranks, stats]
+        self.avg_rank = []
+
+        # tk variables
+        self.is_nxt = tk.BooleanVar(value=False)
+        self.auto_full = tk.BooleanVar()
+        self.cont_run = tk.IntVar()
+
         # Create tools window
         tools = tk.Toplevel(self.root, padx=10, pady=10)
         tools.wm_title("Tools")
@@ -226,12 +246,20 @@ class Controller:
         n.add(self.summ_frame, text='KPIs')
         n.pack(fill=tk.BOTH, expand=1)
 
+        self.summ_tree = self.create_summ_tree(self.summ_frame)
         self.new_generation_cleanup(clear_frames=False)
-        self.create_controller(auto_run=auto_run, auto_full=auto_full)
+        Radios, self.CB1, btns = self.create_controller(
+            auto_run=auto_run, auto_full=auto_full)
+        self.R1, self.R2, self.R3 = Radios
+        self.btn_nxt_gen, self.btn_nxt_rnd, self.btn_xtr_gen, self.btn_xtr_rnd, self.btn_to_full = btns
         self.aod_ax, self.aod_canvas = create_graph(self.aod_grph_frame)
         self.ranks_ax, self.ranks_canvas = create_graph(
             self.ranks_grph_frame)
-        self.create_analysis(self.stat_frame)
+        self.f_config, self.f_current, self.f_at_tx, self.f_at_100 = self.create_analysis(
+            self.stat_frame)
+
+        # update frames with data
+        self.update_analysis(self.data)
 
     def create_summ_tree(self, root):
         # taking all the columns heading in a variable "df_col".
@@ -277,39 +305,33 @@ class Controller:
         bottom_pane = ttk.PanedWindow(all_pane, orient=tk.HORIZONTAL)
 
         # Create top label frames
-        self.f_config = ttk.Labelframe(top_pane, text='Configurations')
-        self.f_current = ttk.Labelframe(top_pane, text='Current run')
+        f_config = ttk.Labelframe(top_pane, text='Configurations')
+        f_current = ttk.Labelframe(top_pane, text='Current run')
 
         # Show Configurations to reserve size
-        display_data(self.f_config, list(self.configs.values()),
+        display_data(f_config, list(self.configs.values()),
                      list(self.configs.keys()))
-        top_pane.add(self.f_config, weight=20)
-        top_pane.add(self.f_current, weight=52)
+        top_pane.add(f_config, weight=20)
+        top_pane.add(f_current, weight=52)
         # top_pane.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
         # Create bottom pane
         rnds = self.configs.get("num_rounds", 1)
-        self.f_at_tx = ttk.Labelframe(bottom_pane, text=f'@ tx = {rnds}')
-        self.f_at_100 = ttk.Labelframe(
+        f_at_tx = ttk.Labelframe(bottom_pane, text=f'@ tx = {rnds}')
+        f_at_100 = ttk.Labelframe(
             bottom_pane, text='@ all nodes 100% AoD')
-        bottom_pane.add(self.f_at_tx, weight=20)
-        bottom_pane.add(self.f_at_100, weight=31)
+        bottom_pane.add(f_at_tx, weight=20)
+        bottom_pane.add(f_at_100, weight=31)
 
         # add panes to all_pane
         all_pane.add(top_pane)
         all_pane.add(bottom_pane)
         all_pane.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-        # Create Header and Tx data
-        self.headers_current = ["Round", "Avg Ranks", "Avg AoD",
-                                "Max AoD", "Min AoD", "Nodes 100%", "Nodes <50%"]
-        vals = [0 for _ in range(self.num_nodes)]
-        ranks = [(1, 1, 1) for _ in range(self.num_nodes)]
-        stats = None
-        self.data = [vals, ranks, stats]
         # Show data
-        display_data(self.f_current, vals, self.headers_current)
-        self.update_analysis(self.data)
+        display_data(f_current, self.data[0], self.headers_current)
+
+        return f_config, f_current, f_at_tx, f_at_100
 
     def update_analysis(self, data, r_curr=0, r_num=0, r_xtra=0):
         self.data = data
@@ -347,7 +369,7 @@ class Controller:
 
     def update_hist_graph(self, arr, round_no, ax, canvas):
         # Graphs update
-        n_range = [*range(self.num_nodes)]
+        n_range = range(self.num_nodes)
         ax.clear()  # clear axes from previous plot
         ax.set_title(
             f'Availability of data for {self.num_nodes} nodes @ tx {round_no}')
@@ -363,6 +385,7 @@ class Controller:
         x_range = np.arange(0, round_no + 1)
         # Graphs update
         ax.clear()  # clear axes from previous plot
+        # sns.catplot(x=, y=, data=arr, ax=ax)
         ax.plot(arr)
         ax.set_title(
             f'Average ranks of {self.num_nodes} decoders Vs num of transmissions')
@@ -416,11 +439,11 @@ class Controller:
         display_data(self.f_at_100, values, headers)
 
     def treeview_sort_column(self, tv, col, reverse):
-        l = [(int(tv.set(k, col)), k) for k in tv.get_children('')]
-        l.sort(reverse=reverse)
+        ltv = [(int(tv.set(k, col)), k) for k in tv.get_children('')]
+        ltv.sort(reverse=reverse)
 
         # rearrange items in sorted positions
-        for index, (val, k) in enumerate(l):
+        for index, (val, k) in enumerate(ltv):
             tv.move(k, '', index)
 
         # reverse sort next time
@@ -450,82 +473,81 @@ class Controller:
         # Container for Radio buttons
         tk.Label(self.ctrlr, text='methods:', anchor='w').pack(pady=(10, 0))
         # Radio variable
-        self.cont_run = tk.IntVar()
         if not auto_run:
             self.cont_run.set(3)
         else:
             self.cont_run.set(0)
-        self.R1 = tk.Radiobutton(self.ctrlr, text="Run all",
-                                 variable=self.cont_run, value=0,
-                                 command=self.dis_btns)
-        self.R1.pack(anchor=tk.W)
+        R1 = tk.Radiobutton(self.ctrlr, text="Run all",
+                            variable=self.cont_run, value=0,
+                            command=self.dis_btns)
+        R1.pack(anchor=tk.W)
 
-        self.R2 = tk.Radiobutton(self.ctrlr, text="Stop @ generations",
-                                 variable=self.cont_run, value=1,
-                                 command=lambda: self.enable_nxt_btn('gen'))
-        self.R2.pack(anchor=tk.W)
+        R2 = tk.Radiobutton(self.ctrlr, text="Stop @ generations",
+                            variable=self.cont_run, value=1,
+                            command=lambda: self.enable_nxt_btn('gen'))
+        R2.pack(anchor=tk.W)
 
-        self.R3 = tk.Radiobutton(self.ctrlr, text="Stop @ rounds",
-                                 variable=self.cont_run, value=2,
-                                 command=lambda: self.enable_nxt_btn('rnd'))
-        self.R3.pack(anchor=tk.W)
+        R3 = tk.Radiobutton(self.ctrlr, text="Stop @ rounds",
+                            variable=self.cont_run, value=2,
+                            command=lambda: self.enable_nxt_btn('rnd'))
+        R3.pack(anchor=tk.W)
 
         ttk.Separator(self.ctrlr, orient='horizontal').pack(
             side='top', fill='x', pady=10)
 
         # Checkbox variable
-        self.auto_full = tk.BooleanVar()
         if auto_full:
             self.auto_full.set(True)
         else:
             self.auto_full.set(False)
-        self.CB1 = tk.Checkbutton(self.ctrlr, text="Run until full Aod",
-                                  variable=self.auto_full, onvalue=True, offvalue=False)
-        self.CB1.pack(anchor=tk.W)
+        CB1 = tk.Checkbutton(self.ctrlr, text="Run until full Aod",
+                             variable=self.auto_full, onvalue=True, offvalue=False)
+        CB1.pack(anchor=tk.W)
 
         ttk.Separator(self.ctrlr, orient='horizontal').pack(
             side='top', fill='x', pady=10)
 
         # NEXT Push buttons
-        self.is_nxt = tk.BooleanVar(value=False)
-        self.btn_nxt_gen = tk.Button(
+        btn_nxt_gen = tk.Button(
             self.ctrlr, text="Next generation", width=15,
             command=self.nxt_clicked)
-        self.btn_nxt_gen['state'] = 'disabled'
-        self.btn_nxt_gen.pack()
+        btn_nxt_gen['state'] = 'disabled'
+        btn_nxt_gen.pack()
 
-        self.btn_nxt_rnd = tk.Button(
+        btn_nxt_rnd = tk.Button(
             self.ctrlr, text="Next round", width=15,
             command=self.nxt_clicked)
-        self.btn_nxt_rnd['state'] = 'disabled'
-        self.btn_nxt_rnd.pack()
+        btn_nxt_rnd['state'] = 'disabled'
+        btn_nxt_rnd.pack()
 
         ttk.Separator(self.ctrlr, orient='horizontal').pack(
             side='top', fill='x', pady=10)
 
         # EXTRA push buttons
-        self.btn_xtr_gen = tk.Button(
+        btn_xtr_gen = tk.Button(
             self.ctrlr, text="Extra generation", width=15)
-        self.btn_xtr_gen['state'] = 'disabled'
-        self.btn_xtr_gen.pack()
+        btn_xtr_gen['state'] = 'disabled'
+        btn_xtr_gen.pack()
 
-        self.btn_xtr_rnd = tk.Button(
+        btn_xtr_rnd = tk.Button(
             self.ctrlr, text="Extra round", width=15)
-        self.btn_xtr_rnd['state'] = 'disabled'
-        self.btn_xtr_rnd.pack()
+        btn_xtr_rnd['state'] = 'disabled'
+        btn_xtr_rnd.pack()
 
         ttk.Separator(self.ctrlr, orient='horizontal').pack(
             side='top', fill='x', pady=10)
 
         # footer buttons
-        self.btn_to_full = tk.Button(
+        btn_to_full = tk.Button(
             self.ctrlr, text="Full AoD", width=15)
-        self.btn_to_full['state'] = 'disabled'
-        self.btn_to_full.pack()
+        btn_to_full['state'] = 'disabled'
+        btn_to_full.pack()
 
         btn_ext = tk.Button(self.ctrlr, text="Exit app", width=15,
                             command=self.close_window)
         btn_ext.pack()
+
+        return (R1, R2, R3), CB1, (btn_nxt_gen, btn_nxt_rnd, btn_xtr_gen, btn_xtr_rnd, btn_to_full)
 
     def dis_btns(self, dis_all=False):
         self.btn_nxt_gen['state'] = 'disabled'
