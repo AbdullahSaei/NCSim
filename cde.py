@@ -177,7 +177,7 @@ def node_receive(node, packets, rnd, _logger):
             n_decoder, *_ = nodes[src]
 
             # greedy decoder
-            g_coe = bytearray([np.random.randint(1, field_max) if n_decoder.is_symbol_pivot(
+            g_coe = bytearray([np.random.randint(1, field_max) if n_decoder.is_symbol_decoded(
                 sym) else 0 for sym in range(NUM_OF_NODES)])
             g_pack = master_encoder.produce_symbol(g_coe)
             g_decoder.consume_symbol(g_pack, g_coe)
@@ -192,7 +192,8 @@ def node_receive(node, packets, rnd, _logger):
             s_decoder.consume_payload(p)
 
         ranks = get_ranks(node.node_id)
-        _logger.info(log_msg + "Ranks: Simple {} Greedy {} Heuristic {}".format(*ranks))
+        _logger.info(
+            log_msg + "Ranks: Simple {} Greedy {} Heuristic {}".format(*ranks))
 
     else:
         log_msg += "no buffered packets"
@@ -200,18 +201,35 @@ def node_receive(node, packets, rnd, _logger):
 
 
 def calculate_aod(rnd="i", _logger=None):
-    aods = []
-    for i, data in enumerate(simple_data_out):
-        d_i = [data[x:x+PACKET_SIZE] for x in range(0, len(data), PACKET_SIZE)]
-        aod = [1 if din == dout else 0 for din, dout in zip(data_in, d_i)]
-        s = "{} " * len(aod)
+    s_aods = []
+    g_aods = []
+    h_aods = []
+
+    for i, s_data, g_data, h_data in zip(range(NUM_OF_NODES),
+        simple_data_out, greedy_data_out, heuristic_data_out):
+        s_d_i = [s_data[x:x+PACKET_SIZE]
+                 for x in range(0, len(s_data), PACKET_SIZE)]
+        s_aod = [1 if din == dout else 0 for din, dout in zip(data_in, s_d_i)]
+
+        g_d_i = [g_data[x:x+PACKET_SIZE]
+                 for x in range(0, len(g_data), PACKET_SIZE)]
+        g_aod = [1 if din == dout else 0 for din, dout in zip(data_in, g_d_i)]
+
+        h_d_i = [h_data[x:x+PACKET_SIZE]
+                 for x in range(0, len(h_data), PACKET_SIZE)]
+        h_aod = [1 if din == dout else 0 for din, dout in zip(data_in, h_d_i)]
+
+        s = "{} " * len(s_aod)
         if _logger:
             _logger.info(
                 ("node {:2},kp{:2},AoD {:2}/{} [" + s + "]").format(
-                    i, rnd, sum(aod), len(aod), *aod)
+                    i, rnd, sum(s_aod), len(s_aod), *s_aod)
             )
-        aods.append(sum(aod)/len(aod) * 100)
-    return aods
+        s_aods.append(sum(s_aod)/len(s_aod) * 100)
+        g_aods.append(sum(g_aod)/len(g_aod) * 100)
+        h_aods.append(sum(h_aod)/len(h_aod) * 100)
+
+    return s_aods, g_aods, h_aods
 
 
 def get_ranks(index):
@@ -222,6 +240,6 @@ def get_ranks(index):
     ranks = (
         s_decoder.rank(),
         g_decoder.rank(),
-        h_decoder.rank()       
+        h_decoder.rank()
     )
     return ranks

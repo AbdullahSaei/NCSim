@@ -1,3 +1,4 @@
+from cde import NUM_OF_NODES
 from turtle import Turtle
 import numpy as np
 
@@ -25,7 +26,6 @@ class Node(Turtle):
         # init counters
         self.aod = 0
         self.rank = 0
-        self.missing = 0
         self.tx_count = 0
         self.total_rx_count = 0
         self.success_rx_count = 0
@@ -37,7 +37,6 @@ class Node(Turtle):
     def clear_counters(self):
         self.aod = 0
         self.rank = 0
-        self.missing = 0
         self.tx_count = 0
         self.total_rx_count = 0
         self.success_rx_count = 0
@@ -202,11 +201,11 @@ class Node(Turtle):
     def set_sending_channel(self, freq, timeslot):
         self.sending_channel = (freq, timeslot)
 
-    def print_aod_percentage(self, r_num, aod, ranks):
-        self.aod = aod
-        self.rank, *_, self.missing, _ = ranks
+    def print_aod_percentage(self, r_num, aods, ranks):
+        self.aod = aods
+        self.rank, *_ = ranks
         self.undo()
-        self.write(f"  {aod:3.0f}%", align="left",
+        self.write(f"  {self.aod:3.0f}%", align="left",
                    font=("sans", 12, "normal"))
         self.new_round_cleanup()
         return self.get_statistics(r_num)
@@ -224,7 +223,7 @@ class Node(Turtle):
             "node": self.node_id,
             "AoD_%": self.aod,
             "rank": self.rank,
-            "missing": self.missing,
+            "missing": NUM_OF_NODES - self.rank,
             "tx_total": self.tx_count,
             "rx_total": self.total_rx_count,
             "rx_success": self.success_rx_count,
