@@ -9,7 +9,7 @@
     "auto_full_aod": true,
     "header_font_size": 30,
     "text_font_size": 14,
-    "screen_refresh_time": 0.9,
+    "screen_refresh_time": 0.1,
     "screen_height": 600,
     "screen_width": 600,
     "screen_margin": 30,

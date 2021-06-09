@@ -209,11 +209,13 @@ class Controller:
                                 "Max AoD", "Min AoD", "Nodes 100%", "Nodes <50%"]
 
         # Data variable
-        vals = [0 for _ in range(self.num_nodes)]
+        vals = [np.zeros(self.num_nodes)] * 3
         ranks = [(1, 1, 1) for _ in range(self.num_nodes)]
         stats = None
         self.data = [vals, ranks, stats]
         self.avg_rank = []
+        self.ranks = pd.DataFrame(
+            columns=['Round', 'Simple', 'Greedy', 'Heuristic'])
 
         # tk variables
         self.is_nxt = tk.BooleanVar(value=False)
@@ -339,8 +341,9 @@ class Controller:
         vals, ranks, stats = data
 
         # prepare data
-        arr = np.array(vals)
+        s_val, g_val, h_val = vals
         s_rank, g_rank, h_rank = zip(*ranks)
+        arr = np.array(s_val)
         avg_ranks = np.mean(s_rank)
         self.avg_rank.append(avg_ranks)
 
@@ -363,35 +366,52 @@ class Controller:
 
         # update other GUIs
         self.update_summ_tree(self.summ_tree, stats)
-        self.update_hist_graph(arr, r_num, self.aod_ax, self.aod_canvas)
-        self.update_ranks_graph(self.avg_rank, r_curr, r_num, r_xtra,
+        self.update_hist_graph(vals, r_curr, r_num, self.aod_ax, self.aod_canvas)
+        self.update_ranks_graph(ranks, r_curr, r_num, r_xtra,
                                 self.ranks_ax, self.ranks_canvas)
 
-    def update_hist_graph(self, arr, round_no, ax, canvas):
+    def update_hist_graph(self, vals, rnd, num_of_rnds, ax, canvas):
+        # prepare data
+        s_val, g_val, h_val = vals
         # Graphs update
         n_range = range(self.num_nodes)
         ax.clear()  # clear axes from previous plot
-        ax.set_title(
-            f'Availability of data for {self.num_nodes} nodes @ tx {round_no}')
-        ax.set_xlabel('Nodes')
         ax.set_xticks(n_range)
-        ax.set_ylabel('Availability of Data percentage (%)')
         ax.set_ylim(0, 100)  # set the y lim to bottom, top
-        ax.bar(n_range, arr)
+
+        # Create dataframe
+        df = pd.DataFrame(data=zip(s_val, g_val, h_val), columns=[
+                          "simple", "greedy", "heuristic"])
+        df['Nodes'] = n_range
+        data = df.melt('Nodes', var_name='Algorithm',
+                       value_name='Availability of Data percentage')
+
+        # Seaborn Plot
+        sns.barplot(x="Nodes", y='Availability of Data percentage',
+                    hue='Algorithm', data=data, ax=ax)
+        ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
+                  fancybox=True, shadow=True, ncol=3)
+        # Update title with current round number
+        ax.set_title(
+            f'Availability of data for {self.num_nodes} nodes @ round {rnd}/{num_of_rnds}')
+        # Deploy the plot
         canvas.draw()
 
-    def update_ranks_graph(self, arr, r_current, r_num, r_xtra, ax, canvas):
+    def update_ranks_graph(self, ranks, r_current, r_num, r_xtra, ax, canvas):
+        # Dataframes
+        df = pd.DataFrame(ranks, columns=['Simple', 'Greedy', 'Heuristic'])
+        df['Round'] = r_current * np.ones(self.num_nodes, dtype=np.int8)
+        self.ranks = self.ranks.append(df, ignore_index=True)
+        # Calculations
         round_no = r_num + r_xtra
         x_range = np.arange(0, round_no + 1)
         # Graphs update
         ax.clear()  # clear axes from previous plot
-        # sns.catplot(x=, y=, data=arr, ax=ax)
-        ax.plot(arr)
-        ax.set_title(
-            f'Average ranks of {self.num_nodes} decoders Vs num of transmissions')
-        ax.set_xlabel(f'Num of transmissions {r_current}')
+
+        df_ranks = self.ranks.melt(
+            'Round', var_name='Algorithm', value_name='Node Ranks')
         ax.set_xticks(x_range)
-        ax.set_ylabel('Avg ranks of decoders')
+
         # set the y lim to bottom, top
         ax.set_yticks(np.arange(self.num_nodes + 1))
         ax.margins(x=0)
@@ -401,14 +421,19 @@ class Controller:
         # Add a vertical lines
         if r_num and r_current >= r_num:
             ax.axvline(r_num, label=f"tx = {r_num}", ls=':', color='r')
-            ax.axhline(np.interp(r_num, x_range, arr),
+            ax.axhline(np.interp(r_num, x_range, self.avg_rank),
                        label=f"rank @ tx {r_num}", ls='--', color='gray')
-        if self.num_nodes in arr:
-            index = np.searchsorted(arr, self.num_nodes)
+        if self.num_nodes in self.avg_rank:
+            index = np.searchsorted(self.avg_rank, self.num_nodes)
             ax.axvline(index, label="full AoD", ls='--', color='g')
             self.show_full_aod_stats(r_current)
+        
 
-        ax.legend(loc='lower right')
+        sns.boxplot(x="Round", y="Node Ranks", hue='Algorithm', data=df_ranks, ax=ax)
+        ax.set_title(
+            f'Average ranks of {self.num_nodes} decoders Vs num of transmissions')
+        ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
+                  fancybox=True, shadow=True, ncol=3)
         canvas.draw()
 
     def show_full_aod_stats(self, r_curr):
@@ -453,6 +478,8 @@ class Controller:
     def new_generation_cleanup(self, clear_frames=True):
         # Clean up
         self.avg_rank = []
+        self.ranks = pd.DataFrame(
+            columns=['Round', 'Simple', 'Greedy', 'Heuristic'])
 
         # Clear dataframe
         self.df_nodes = pd.DataFrame(columns=self.summ_header)
