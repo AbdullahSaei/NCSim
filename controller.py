@@ -10,7 +10,6 @@ import matplotlib
 
 plt.style.use('seaborn-deep')
 matplotlib.use('TkAgg')
-sns.set()
 
 
 def setup_turtles():
@@ -398,6 +397,8 @@ class Controller:
         canvas.draw()
 
     def update_ranks_graph(self, ranks, r_current, r_num, r_xtra, ax, canvas):
+        hv_lines = []
+        hv_line_labels = []
         # Dataframes
         df = pd.DataFrame(ranks, columns=['Simple', 'Greedy', 'Heuristic'])
         df['Round'] = r_current * np.ones(self.num_nodes, dtype=np.int8)
@@ -414,26 +415,31 @@ class Controller:
 
         # set the y lim to bottom, top
         ax.set_yticks(np.arange(self.num_nodes + 1))
-        ax.margins(x=0)
-        ax.grid()
+        # ax.margins(x=0)
+        # ax.grid()
         # Add horizontal lines
-        ax.axhline(self.num_nodes, label="max rank", ls='--', color='r')
+        hv_lines.append(ax.axhline(self.num_nodes, ls='--', color='r'))
+        hv_line_labels.append("max rank")
         # Add a vertical lines
         if r_num and r_current >= r_num:
-            ax.axvline(r_num, label=f"tx = {r_num}", ls=':', color='r')
-            ax.axhline(np.interp(r_num, x_range, self.avg_rank),
-                       label=f"rank @ tx {r_num}", ls='--', color='gray')
+            hv_lines.append(ax.axvline(r_num, ls=':', color='r'))
+            hv_line_labels.append(f"tx = {r_num}")
+            hv_lines.append(ax.axhline(np.interp(r_num, x_range, self.avg_rank), ls='--', color='gray'))
+            hv_line_labels.append(f"rank @ tx {r_num}")
         if self.num_nodes in self.avg_rank:
             index = np.searchsorted(self.avg_rank, self.num_nodes)
-            ax.axvline(index, label="full AoD", ls='--', color='g')
+            hv_lines.append(ax.axvline(index, ls='--', color='g'))
+            hv_line_labels.append("full AoD")
             self.show_full_aod_stats(r_current)
         
 
         sns.boxplot(x="Round", y="Node Ranks", hue='Algorithm', data=df_ranks, ax=ax)
         ax.set_title(
             f'Average ranks of {self.num_nodes} decoders Vs num of transmissions')
-        ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
+        leg1 = ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
                   fancybox=True, shadow=True, ncol=3)
+        ax.legend(hv_lines, hv_line_labels, loc='lower right')
+        ax.add_artist(leg1)
         canvas.draw()
 
     def show_full_aod_stats(self, r_curr):
