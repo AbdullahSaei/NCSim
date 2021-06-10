@@ -480,7 +480,7 @@ class NCSim:
         self.end_generation()
 
         # continue running if check box marked
-        if self.ctrl.is_run_to_full():
+        if self.ctrl.is_run_to_full() and self.ctrl.is_continuous_run() == 0:
             self.run_to_full()
 
     def end_round(self, round_num):
