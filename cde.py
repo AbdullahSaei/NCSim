@@ -183,7 +183,7 @@ def node_receive(node, packets, rnd, _logger):
             g_decoder.consume_symbol(g_pack, g_coe)
 
             # heuristic decoder
-            h_coe = bytearray([np.random.randint(1, field_max) if s_decoder.is_symbol_missing(
+            h_coe = bytearray([np.random.randint(1, field_max) if h_decoder.is_symbol_missing(
                 sym) and n_decoder.is_symbol_pivot(sym) else 0 for sym in range(NUM_OF_NODES)])
             h_pack = master_encoder.produce_symbol(h_coe)
             h_decoder.consume_symbol(h_pack, h_coe)
@@ -222,8 +222,16 @@ def calculate_aod(rnd="i", _logger=None):
         s = "{} " * len(s_aod)
         if _logger:
             _logger.info(
-                ("node {:2},kp{:2},AoD {:2}/{} [" + s + "]").format(
+                ("node {:2},kp{:2},S_AoD {:2}/{} [" + s + "]").format(
                     i, rnd, sum(s_aod), len(s_aod), *s_aod)
+            )
+            _logger.info(
+                ("node {:2},kp{:2},G_AoD {:2}/{} [" + s + "]").format(
+                    i, rnd, sum(g_aod), len(g_aod), *g_aod)
+            )
+            _logger.info(
+                ("node {:2},kp{:2},H_AoD {:2}/{} [" + s + "]").format(
+                    i, rnd, sum(h_aod), len(h_aod), *h_aod)
             )
         s_aods.append(sum(s_aod)/len(s_aod) * 100)
         g_aods.append(sum(g_aod)/len(g_aod) * 100)
