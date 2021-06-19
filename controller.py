@@ -213,8 +213,6 @@ class Controller:
         stats = None
         self.data = [vals, ranks, stats]
         self.avg_rank = []
-        self.ranks = pd.DataFrame(
-            columns=['Round', 'Simple', 'Greedy', 'Heuristic'])
 
         # tk variables
         self.is_nxt = tk.BooleanVar(value=False)
@@ -248,7 +246,6 @@ class Controller:
         n.pack(fill=tk.BOTH, expand=1)
 
         self.summ_tree = self.create_summ_tree(self.summ_frame)
-        self.new_generation_cleanup(clear_frames=False)
         Radios, self.CB1, btns = self.create_controller(
             auto_run=auto_run, auto_full=auto_full)
         self.R1, self.R2, self.R3 = Radios
@@ -259,6 +256,7 @@ class Controller:
         self.f_config, self.f_current, self.f_at_tx, self.f_at_100 = self.create_analysis(
             self.stat_frame)
 
+        self.new_generation_cleanup(clear_frames=False)
         # update frames with data
         self.update_analysis(self.data)
 
@@ -334,7 +332,7 @@ class Controller:
 
         return f_config, f_current, f_at_tx, f_at_100
 
-    def update_analysis(self, data, r_curr=0, r_num=0, r_xtra=0):
+    def update_analysis(self, data, r_curr=0, r_num=0, r_xtra=1):
         self.data = data
         # Extract data
         vals, ranks, stats = data
@@ -344,7 +342,7 @@ class Controller:
         s_rank, g_rank, h_rank = zip(*ranks)
         arr = np.array(s_val)
         avg_ranks = np.mean(s_rank)
-        self.avg_rank.append(avg_ranks)
+        self.avg_rank.append((avg_ranks, np.mean(g_rank), np.mean(h_rank)))
 
         # Calculate full done and half done nodes
         f_dn = len(arr[arr == 100]) if arr[arr == 100].any() else 0
@@ -365,7 +363,8 @@ class Controller:
 
         # update other GUIs
         self.update_summ_tree(self.summ_tree, stats)
-        self.update_hist_graph(vals, r_curr, r_num, self.aod_ax, self.aod_canvas)
+        self.update_hist_graph(vals, r_curr, r_num,
+                               self.aod_ax, self.aod_canvas)
         self.update_ranks_graph(ranks, r_curr, r_num, r_xtra,
                                 self.ranks_ax, self.ranks_canvas)
 
@@ -397,49 +396,88 @@ class Controller:
         canvas.draw()
 
     def update_ranks_graph(self, ranks, r_current, r_num, r_xtra, ax, canvas):
-        hv_lines = []
-        hv_line_labels = []
+        s_ranks, g_ranks, h_ranks = zip(*self.avg_rank)
+
         # Dataframes
         df = pd.DataFrame(ranks, columns=['Simple', 'Greedy', 'Heuristic'])
         df['Round'] = r_current * np.ones(self.num_nodes, dtype=np.int8)
-        self.ranks = self.ranks.append(df, ignore_index=True)
+
         # Calculations
         round_no = r_num + r_xtra
         x_range = np.arange(0, round_no + 1)
+        
         # Graphs update
-        ax.clear()  # clear axes from previous plot
-
-        df_ranks = self.ranks.melt(
+        df_ranks = df.melt(
             'Round', var_name='Algorithm', value_name='Node Ranks')
+        temps = [{'Round': i, 'Algorithm': 'Simple', 'Node Ranks': -2}
+                 for i in range(r_current)]
+
+        df_ranks = df_ranks.append(temps, ignore_index=True)
+
+        sns.boxplot(x="Round", y="Node Ranks", hue='Algorithm',
+                    data=df_ranks, ax=ax)
         ax.set_xticks(x_range)
 
         # set the y lim to bottom, top
-        ax.set_yticks(np.arange(self.num_nodes + 1))
-        # ax.margins(x=0)
-        # ax.grid()
-        # Add horizontal lines
-        hv_lines.append(ax.axhline(self.num_nodes, ls='--', color='r'))
-        hv_line_labels.append("max rank")
-        # Add a vertical lines
-        if r_num and r_current >= r_num:
-            hv_lines.append(ax.axvline(r_num, ls=':', color='r'))
-            hv_line_labels.append(f"tx = {r_num}")
-            hv_lines.append(ax.axhline(np.interp(r_num, x_range, self.avg_rank), ls='--', color='gray'))
-            hv_line_labels.append(f"rank @ tx {r_num}")
-        if self.num_nodes in self.avg_rank:
-            index = np.searchsorted(self.avg_rank, self.num_nodes)
-            hv_lines.append(ax.axvline(index, ls='--', color='g'))
-            hv_line_labels.append("full AoD")
-            self.show_full_aod_stats(r_current)
-        
+        ax.set_ylim(0, self.num_nodes + 1)
+        ax.xaxis.grid(True)
+        ax.yaxis.grid(True)
 
-        sns.boxplot(x="Round", y="Node Ranks", hue='Algorithm', data=df_ranks, ax=ax)
-        ax.set_title(
-            f'Average ranks of {self.num_nodes} decoders Vs num of transmissions')
-        leg1 = ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
-                  fancybox=True, shadow=True, ncol=3)
-        ax.legend(hv_lines, hv_line_labels, loc='lower right')
-        ax.add_artist(leg1)
+        # Add a vertical lines
+        if not r_xtra and r_current == r_num:
+            s_res = np.interp(r_num, x_range, s_ranks)
+            g_res = np.interp(r_num, x_range, g_ranks)
+            h_res = np.interp(r_num, x_range, h_ranks)
+
+            ax.axhline(s_res, ls='--', color='tab:blue')
+            ax.text(0.05, s_res+0.1, "Simple", color='tab:blue')
+
+            ax.axhline(g_res, ls='--', color='tab:green')
+            ax.text(0.05, g_res+0.1, "Greedy", color='tab:green')
+
+            ax.axhline(h_res, ls='--', color='tab:red')
+            ax.text(0.05, h_res+0.1, "Heuristic", color='tab:red')
+
+        # Add line when simple complete
+        if s_ranks.count(self.num_nodes) == 1:
+            index = len(s_ranks) - 1
+            ax.axvline(index-0.2, ls='--', color='tab:blue')
+            ax.text(index-0.2, 0.1, "Simple done", color='tab:blue',
+                    rotation=270, transform=ax.get_xaxis_text1_transform(0)[0])
+
+            self.show_full_aod_stats(r_current)
+
+        # Add line when greedy complete
+        if g_ranks.count(self.num_nodes) == 1:
+            index = len(g_ranks) - 1
+            ax.axvline(index, ls='--', color='tab:green')
+            ax.text(index, 0.1, "Greedy done", color='tab:green', rotation=270,
+                    transform=ax.get_xaxis_text1_transform(0)[0])
+
+        # Add line when heuristic complete
+        if h_ranks.count(self.num_nodes) == 1:
+            index = len(h_ranks) - 1
+            ax.axvline(index+0.2, ls='--', color='tab:red')
+            ax.text(index+0.2, 0.1, "Heuristic done", color='tab:red',
+                    rotation=270, transform=ax.get_xaxis_text1_transform(0)[0])
+
+        # one time graph setup
+        if not r_xtra and not r_current:
+            # Add horizontal lines
+            ax.axhline(self.num_nodes, ls=':', color='r')
+            ax.text(0.1, self.num_nodes+0.1, "Max Rank", color='r')
+
+            ax.axvline(r_num, ls=':', color='r')
+            ax.text(r_num, 0.1, f"tx = {r_num}", color='r',
+                    rotation=270, transform=ax.get_xaxis_text1_transform(0)[0])
+
+            ax.set_title(
+                f'Average ranks of {self.num_nodes} decoders Vs num of transmissions')
+            leg1 = ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
+                             fancybox=True, shadow=True, ncol=3)
+            ax.add_artist(leg1)
+
+        ax.legend([], [], frameon=False)
         canvas.draw()
 
     def show_full_aod_stats(self, r_curr):
@@ -484,8 +522,8 @@ class Controller:
     def new_generation_cleanup(self, clear_frames=True):
         # Clean up
         self.avg_rank = []
-        self.ranks = pd.DataFrame(
-            columns=['Round', 'Simple', 'Greedy', 'Heuristic'])
+
+        self.ranks_ax.clear()
 
         # Clear dataframe
         self.df_nodes = pd.DataFrame(columns=self.summ_header)
