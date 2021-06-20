@@ -1,4 +1,3 @@
-from cde import NUM_OF_NODES
 from turtle import Turtle
 import numpy as np
 
@@ -215,7 +214,7 @@ class Node(Turtle):
         # Clear buffer
         self.rx_buffer = []
 
-    def get_statistics(self, r=0, aod=(0,0,0), rank=(0,0,0)):
+    def get_statistics(self, r=0, aod=(0, 0, 0), rank=(0, 0, 0)):
         return {
             "round": r,
             "node": self.node_id,

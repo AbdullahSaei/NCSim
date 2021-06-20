@@ -238,10 +238,12 @@ class Controller:
         self.stat_frame = ttk.Frame(n)  # first page
         self.aod_grph_frame = ttk.Frame(n)  # second page
         self.ranks_grph_frame = ttk.Frame(n)  # third page
-        self.summ_frame = ttk.Frame(n)  # forth page
+        self.overhead_frame = ttk.Frame(n)  # forth page
+        self.summ_frame = ttk.Frame(n)  # fifth page
         n.add(self.stat_frame, text='Statistics')
         n.add(self.aod_grph_frame, text='AoD Graph')
         n.add(self.ranks_grph_frame, text='Ranks Graph')
+        n.add(self.overhead_frame, text='OH Graph')
         n.add(self.summ_frame, text='KPIs')
         n.pack(fill=tk.BOTH, expand=1)
 
@@ -251,8 +253,8 @@ class Controller:
         self.R1, self.R2, self.R3 = Radios
         self.btn_nxt_gen, self.btn_nxt_rnd, self.btn_xtr_gen, self.btn_xtr_rnd, self.btn_to_full = btns
         self.aod_ax, self.aod_canvas = create_graph(self.aod_grph_frame)
-        self.ranks_ax, self.ranks_canvas = create_graph(
-            self.ranks_grph_frame)
+        self.ranks_ax, self.ranks_canvas = create_graph(self.ranks_grph_frame)
+        self.oh_ax, self.oh_canvas = create_graph(self.overhead_frame)
         self.f_config, self.f_current, self.f_at_tx, self.f_at_100 = self.create_analysis(
             self.stat_frame)
 
@@ -409,10 +411,10 @@ class Controller:
         # Graphs update
         df_ranks = df.melt(
             'Round', var_name='Algorithm', value_name='Node Ranks')
-        temps = [{'Round': i, 'Algorithm': 'Simple', 'Node Ranks': -2}
-                 for i in range(r_current)]
+        temps = pd.DataFrame([{'Round': i, 'Algorithm': 'Simple', 'Node Ranks': -2}
+                 for i in range(r_current)])
 
-        df_ranks = df_ranks.append(temps, ignore_index=True)
+        df_ranks = temps.append(df_ranks, ignore_index=True)
 
         sns.boxplot(x="Round", y="Node Ranks", hue='Algorithm',
                     data=df_ranks, ax=ax)

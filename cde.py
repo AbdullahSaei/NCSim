@@ -146,10 +146,44 @@ def generate_data():
 
 def node_broadcast(node, neighbours, rnd, _logger):
     # get kodo encoder and decoder
-    s_decoder, *_ = nodes[node.node_id]
+    s_decoder, g_decoder, h_decoder = nodes[node.node_id]
 
-    # produce packet to broadcast
-    pack = s_decoder.produce_payload()
+    # produce simple packet to broadcast
+    s_pack_coe = bytearray([np.random.choice([np.random.randint(field_max), 0]) if s_decoder.is_symbol_pivot(
+                    sym) else 0 for sym in range(NUM_OF_NODES)])
+    s_pack_msg = master_encoder.produce_symbol(s_pack_coe)
+    s_pack = {
+        'msg': s_pack_msg,
+        'coe': s_pack_coe
+    }
+
+    # produce greedy packet to broadcast
+    g_pack_coe = bytearray([np.random.randint(1, field_max) if g_decoder.is_symbol_pivot(
+        sym) else 0 for sym in range(NUM_OF_NODES)])
+    g_pack_msg = master_encoder.produce_symbol(g_pack_coe)
+    g_pack = {
+        'msg': g_pack_msg,
+        'coe': g_pack_coe
+    }
+
+    # produce heuristic packet to broadcast
+    missings = np.zeros(NUM_OF_NODES, dtype=np.int8)
+    for ngbr in neighbours:
+        _, ngbr_h_decoder, _ = nodes[ngbr.node_id]
+        missings = [1 if ngbr_h_decoder.is_symbol_missing(sym) else missings[sym] for sym in range(NUM_OF_NODES)]
+    if np.sum(missings) == 0:
+        missings = [np.random.choice([True, False]) for _ in range(NUM_OF_NODES)]
+
+    h_pack_coe = bytearray([np.random.randint(1, field_max) if h_decoder.is_symbol_pivot(
+        sym) and missings[sym] else 0 for sym in range(NUM_OF_NODES)])
+    h_pack_msg = master_encoder.produce_symbol(h_pack_coe)
+    h_pack = {
+        'msg': h_pack_msg,
+        'coe': h_pack_coe
+    }
+
+    # combine all packs
+    pack = (s_pack, g_pack, h_pack)
 
     # log data
     # log message and channel
@@ -173,23 +207,21 @@ def node_receive(node, packets, rnd, _logger):
     log_msg = "node {:2},rx{:2},".format(node.node_id, rnd)
 
     if len(packets) > 0:
-        for src, p in packets:
-            n_decoder, *_ = nodes[src]
+        for src, pkt in packets:
+            s_pkt, g_pkt, h_pkt=pkt
+
+            s_pack, s_coe=s_pkt.values()
+            g_pack, g_coe=g_pkt.values()
+            h_pack, h_coe=h_pkt.values()
 
             # greedy decoder
-            g_coe = bytearray([np.random.randint(1, field_max) if n_decoder.is_symbol_decoded(
-                sym) else 0 for sym in range(NUM_OF_NODES)])
-            g_pack = master_encoder.produce_symbol(g_coe)
             g_decoder.consume_symbol(g_pack, g_coe)
 
             # heuristic decoder
-            h_coe = bytearray([np.random.randint(1, field_max) if h_decoder.is_symbol_missing(
-                sym) and n_decoder.is_symbol_pivot(sym) else 0 for sym in range(NUM_OF_NODES)])
-            h_pack = master_encoder.produce_symbol(h_coe)
             h_decoder.consume_symbol(h_pack, h_coe)
 
             # simple decoder
-            s_decoder.consume_payload(p)
+            s_decoder.consume_symbol(s_pack, s_coe)
 
         ranks = get_ranks(node.node_id)
         _logger.info(
@@ -206,7 +238,7 @@ def calculate_aod(rnd="i", _logger=None):
     h_aods = []
 
     for i, s_data, g_data, h_data in zip(range(NUM_OF_NODES),
-        simple_data_out, greedy_data_out, heuristic_data_out):
+                                         simple_data_out, greedy_data_out, heuristic_data_out):
         s_d_i = [s_data[x:x+PACKET_SIZE]
                  for x in range(0, len(s_data), PACKET_SIZE)]
         s_aod = [1 if din == dout else 0 for din, dout in zip(data_in, s_d_i)]
