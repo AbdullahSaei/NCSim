@@ -36,10 +36,6 @@ TIMESLOT_NUM = int(CFG_PARAM.get("timeslots", 2))
 TX_MODE = CFG_PARAM.get("tx_mode", "half_duplex")
 RX_MODE = CFG_PARAM.get("rx_mode", "multi")
 
-# Fetch Enhancing Algorithm parameters
-ALGM_N = int(CFG_PARAM.get("algm_n", 1))
-ALGM_TYPE = CFG_PARAM.get("algm_type", "greedy")
-
 # Kodo configuration
 CFG_KODO = {
     "n_coverage": NODE_COVERAGE,
@@ -120,9 +116,7 @@ def get_configs():
         "channels": CHANNEL_NUM,
         "timeslots": TIMESLOT_NUM,
         "tx_mode": TX_MODE,
-        "rx_mode": RX_MODE,
-        "algorithm": ALGM_TYPE,
-        "periodic_Nth": ALGM_N
+        "rx_mode": RX_MODE
     }
 
 
@@ -148,7 +142,7 @@ class NCSim:
             fun=self.mclick.left_click, btn=1, add=True)
         # attach left click
         ncsv.set_click_listener(fun=self.mclick.popup, btn=3, add=True)
-        summ_header = [*self.nodes[0].get_statistics(0)]
+        summ_header = [*self.nodes[0].get_statistics()]
         # Init controller window
         self.ctrl = Controller(
             self.screen.root, summ_header, auto_run=RUN_ALL, 
@@ -486,17 +480,17 @@ class NCSim:
     def end_round(self, round_num):
         # calculate data for the round
         aods = cde.calculate_aod(round_num, _logger=kpi)
+        aods_tuples = zip(*aods)
         ranks = [cde.get_ranks(n.node_id) for n in self.nodes]
         stats = [n.print_aod_percentage(
-            round_num, aods[0][i], ranks[i]) for i, n in enumerate(self.nodes)]
+            round_num, next(aods_tuples), ranks[i]) for i, n in enumerate(self.nodes)]
         self.ctrl.update_analysis(
             [aods, ranks, stats], round_num, ROUNDS, EXTRA_RNDS)
         print(f"end round {round_num}")
 
     def end_generation(self):
         # Calculate nodes with 100% AoD
-        self.full_AoD = [1 if n.aod == 100 else 0 for _,
-                         n in enumerate(self.nodes)]
+        self.full_AoD = [1 if n.last_aod == (100, 100, 100) else 0 for n in self.nodes]
         kpi.info(
             f"totn {NUM_OF_NODES},al{ROUNDS + EXTRA_RNDS},AoD {sum(self.full_AoD):2}/{len(self.full_AoD)} has 100%")
 

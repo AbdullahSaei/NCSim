@@ -35,8 +35,6 @@
     "channels": 5,
     "timeslots": 5,
     "tx_mode": "half_duplex",
-    "rx_mode": "single",
-    "algm_n": 1,
-    "algm_type": "Simple"
+    "rx_mode": "single"
   }
 }

@@ -24,8 +24,7 @@ class Node(Turtle):
         self.rx_multi = kwargs.get("rx_multi", True)
 
         # init counters
-        self.aod = 0
-        self.rank = 0
+        self.last_aod = (0, 0, 0)
         self.tx_count = 0
         self.total_rx_count = 0
         self.success_rx_count = 0
@@ -35,8 +34,7 @@ class Node(Turtle):
         self.packet_loss_count = 0
 
     def clear_counters(self):
-        self.aod = 0
-        self.rank = 0
+        self.last_aod = (0, 0, 0)
         self.tx_count = 0
         self.total_rx_count = 0
         self.success_rx_count = 0
@@ -154,7 +152,7 @@ class Node(Turtle):
                         output = arr[np.random.choice(arr.shape[0])]
                         selected = (output[0], output[1])
                     else:
-                        selected = (gmsg[0][0], gmsg[0][1]) 
+                        selected = (gmsg[0][0], gmsg[0][1])
                     rx_msg.append(selected)
 
             # log status of messages
@@ -173,7 +171,8 @@ class Node(Turtle):
         # not all received messages can fit into the buffer
         if len(rx_msg) > self.buffer_size:
             arr = np.array(rx_msg, dtype=object)
-            selected = arr[np.random.choice(arr.shape[0], size=self.buffer_size, replace=False)]
+            selected = arr[np.random.choice(
+                arr.shape[0], size=self.buffer_size, replace=False)]
             rx_msg = selected.tolist()
 
         # update counter
@@ -197,18 +196,17 @@ class Node(Turtle):
         else:
             print("node {:2} no buffer".format(self.node_id))
             return None
-    
+
     def set_sending_channel(self, freq, timeslot):
         self.sending_channel = (freq, timeslot)
 
     def print_aod_percentage(self, r_num, aods, ranks):
-        self.aod = aods
-        self.rank, *_ = ranks
+        self.last_aod = aods
         self.undo()
-        self.write(f"  {self.aod:3.0f}%", align="left",
+        self.write(f"  {aods[0]:3.0f}%", align="left",
                    font=("sans", 12, "normal"))
         self.new_round_cleanup()
-        return self.get_statistics(r_num)
+        return self.get_statistics(r_num, aods, ranks)
 
     def new_round_cleanup(self):
         # discard other available messages
@@ -217,18 +215,20 @@ class Node(Turtle):
         # Clear buffer
         self.rx_buffer = []
 
-    def get_statistics(self, r):
+    def get_statistics(self, r=0, aod=(0,0,0), rank=(0,0,0)):
         return {
             "round": r,
             "node": self.node_id,
-            "AoD_%": self.aod,
-            "rank": self.rank,
-            "missing": NUM_OF_NODES - self.rank,
+            "S_AoD_%": aod[0],
+            "H_AoD_%": aod[1],
+            "G_AoD_%": aod[2],
+            "S_rank": rank[0],
+            "G_rank": rank[1],
+            "H_rank": rank[2],
             "tx_total": self.tx_count,
             "rx_total": self.total_rx_count,
             "rx_success": self.success_rx_count,
             "rx_collisions": self.collision_count,
             "rx_ignored": self.ig_msgs_count,
-            "rx_missed": self.rx_missed_count,
-            "rx_SINR_loss": self.packet_loss_count
+            "rx_missed": self.rx_missed_count
         }
