@@ -150,7 +150,7 @@ def node_broadcast(node, neighbours, rnd, _logger):
 
     # produce simple packet to broadcast
     s_pack_coe = bytearray([np.random.choice([np.random.randint(field_max), 0]) if s_decoder.is_symbol_pivot(
-                    sym) else 0 for sym in range(NUM_OF_NODES)])
+        sym) else 0 for sym in range(NUM_OF_NODES)])
     s_pack_msg = master_encoder.produce_symbol(s_pack_coe)
     s_pack = {
         'msg': s_pack_msg,
@@ -170,9 +170,11 @@ def node_broadcast(node, neighbours, rnd, _logger):
     missings = np.zeros(NUM_OF_NODES, dtype=np.int8)
     for ngbr in neighbours:
         _, ngbr_h_decoder, _ = nodes[ngbr.node_id]
-        missings = [1 if ngbr_h_decoder.is_symbol_missing(sym) else missings[sym] for sym in range(NUM_OF_NODES)]
+        missings = [1 if ngbr_h_decoder.is_symbol_missing(
+            sym) else missings[sym] for sym in range(NUM_OF_NODES)]
     if np.sum(missings) == 0:
-        missings = [np.random.choice([True, False]) for _ in range(NUM_OF_NODES)]
+        missings = [np.random.choice([True, False])
+                    for _ in range(NUM_OF_NODES)]
 
     h_pack_coe = bytearray([np.random.randint(1, field_max) if h_decoder.is_symbol_pivot(
         sym) and missings[sym] else 0 for sym in range(NUM_OF_NODES)])
@@ -206,27 +208,30 @@ def node_receive(node, packets, rnd, _logger):
     # check if data in buffer
     log_msg = "node {:2},rx{:2},".format(node.node_id, rnd)
 
+    # consume received messages
     if len(packets) > 0:
         for src, pkt in packets:
-            s_pkt, g_pkt, h_pkt=pkt
-
-            s_pack, s_coe=s_pkt.values()
-            g_pack, g_coe=g_pkt.values()
-            h_pack, h_coe=h_pkt.values()
-
-            # greedy decoder
-            g_decoder.consume_symbol(g_pack, g_coe)
+            s_pkt, g_pkt, h_pkt = pkt
 
             # heuristic decoder
-            h_decoder.consume_symbol(h_pack, h_coe)
+            if h_pkt:
+                h_pack, h_coe = h_pkt.values()
+                h_decoder.consume_symbol(h_pack, h_coe)
 
-            # simple decoder
-            s_decoder.consume_symbol(s_pack, s_coe)
+            if s_pkt and g_pkt:
+                # greedy decoder
+                g_pack, g_coe = g_pkt.values()
+                g_decoder.consume_symbol(g_pack, g_coe)
+
+                # simple decoder
+                s_pack, s_coe = s_pkt.values()
+                s_decoder.consume_symbol(s_pack, s_coe)
 
         ranks = get_ranks(node.node_id)
         _logger.info(
             log_msg + "Ranks: Simple {} Greedy {} Heuristic {}".format(*ranks))
 
+    # warn if no messages at all
     else:
         log_msg += "no buffered packets"
         _logger.warning(log_msg)
