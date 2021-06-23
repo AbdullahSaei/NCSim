@@ -56,6 +56,7 @@ field = fifi.get(FINITE_FIELD, "binary8")
 field_max = 2 ** int(fifi_num.get(FINITE_FIELD, 8))
 symbols = NUM_OF_NODES
 symbol_size = PACKET_SIZE
+sparse = [0.5, 0.5]
 
 # Pseudo random seed
 np.random.seed(SEED_VALUE)
@@ -149,7 +150,7 @@ def node_broadcast(node, neighbours, rnd, _logger):
     s_decoder, g_decoder, h_decoder = nodes[node.node_id]
 
     # produce simple packet to broadcast
-    s_pack_coe = bytearray([np.random.choice([np.random.randint(field_max), 0]) if s_decoder.is_symbol_pivot(
+    s_pack_coe = bytearray([np.random.choice([np.random.randint(field_max), 0], p=sparse) if s_decoder.is_symbol_pivot(
         sym) else 0 for sym in range(NUM_OF_NODES)])
     s_pack_msg = master_encoder.produce_symbol(s_pack_coe)
     s_pack = {
@@ -169,12 +170,12 @@ def node_broadcast(node, neighbours, rnd, _logger):
     # produce heuristic packet to broadcast
     missings = np.zeros(NUM_OF_NODES, dtype=np.int8)
     for ngbr in neighbours:
-        _, ngbr_h_decoder, _ = nodes[ngbr.node_id]
+        _, _, ngbr_h_decoder = nodes[ngbr.node_id]
         missings = [1 if ngbr_h_decoder.is_symbol_missing(
             sym) else missings[sym] for sym in range(NUM_OF_NODES)]
-    if np.sum(missings) == 0:
-        missings = [np.random.choice([True, False])
-                    for _ in range(NUM_OF_NODES)]
+        if False and np.sum(missings) == 0 and not ngbr_h_decoder.is_complete():
+            missings = [np.random.choice([True, False])
+                        for _ in range(NUM_OF_NODES)]
 
     h_pack_coe = bytearray([np.random.randint(1, field_max) if h_decoder.is_symbol_pivot(
         sym) and missings[sym] else 0 for sym in range(NUM_OF_NODES)])
