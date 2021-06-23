@@ -382,9 +382,6 @@ class NCSim:
         self.screen.visual_output_msg(
             f"Please choose running method from the controller")
 
-    def get_nodes_cor(self):
-        return [n.pos() for n in self.nodes]
-
     def tx_phase(self, r):
         # All transmit in random order
         for node in np.random.permutation(self.nodes):
@@ -528,6 +525,8 @@ class NCSim:
         global EXTRA_RNDS
         GENERATIONS = GENERATIONS + 1
         EXTRA_RNDS = 0
+
+        #self.ctrl.new_gen_enable_btns()
         self.run_gen(GENERATIONS, True)
 
     def extra_rnd(self):

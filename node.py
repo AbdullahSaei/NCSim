@@ -89,12 +89,24 @@ class Node(Turtle):
 
             # remove collisions
             all_srcs = [src for _, _, src in self.available_messages]
+            heu_srcs = [src for _, m, src in self.available_messages if m[-1]]
+
             # survivor msgs from collisions
             unq_msgs = []
             for i, m, src in self.available_messages:
                 freq = all_srcs.count(src)
+                h_freq = heu_srcs.count(src)
+
                 if freq == 1:
                     unq_msgs.append((i, m, src))
+                elif h_freq == 1:
+                    #smpl, grdy, hrst = m
+                    logger.warning(
+                        "node {:2} heuristic survived collision @ {}".format(
+                            self.node_id, src
+                        )
+                    )
+                    unq_msgs.append((i, (None, None, m[-1]), src))
                 else:
                     # number of collided msgs
                     self.collision_count = self.collision_count + 1
@@ -128,34 +140,54 @@ class Node(Turtle):
                     self.packet_loss_count = self.packet_loss_count + 1
                     logger.warning(
                         "node {:2} packet loss".format(self.node_id))
-                    continue
 
             # filter msgs received at same time
-            if not self.rx_multi and len(multi_rx_msg) > 0:
+            if not self.rx_multi and len(multi_rx_msg) > 1:
+                # also remove collided ones
                 unq_srcs = [src for _, _, src in multi_rx_msg]
                 timeslots = set(map(lambda x: x[1], unq_srcs))
+
                 # node cannot receive on multi-channels at the same time
                 grouped_msgs = [[m for m in multi_rx_msg if m[2][1] == t]
                                 for t in timeslots]
+
                 # number of missed messages at same time
                 for gmsg in grouped_msgs:
                     if len(gmsg) > 1:
+                        msgs_s_nonzeros = [
+                            (i, m) for i, m, ch in gmsg if m[0] and not m[-1]]
+                        msgs_h_nonzeros = [
+                            (i, m) for i, m, ch in gmsg if m[-1] and not m[0]]
                         skipped_msgs = len(gmsg) - 1
+
+                        selected = self.choose_random_from_list(gmsg)
+
+                        # heuristic place is empty
+                        if msgs_h_nonzeros and not selected[1][-1]:
+                            rx_msg.append(selected)
+                            selected = self.choose_random_from_list(
+                                msgs_h_nonzeros)
+                            skipped_msgs -= 1
+                        # simple place is empty
+                        elif msgs_s_nonzeros and not selected[1][0]:
+                            rx_msg.append(selected)
+                            selected = self.choose_random_from_list(
+                                msgs_s_nonzeros)
+                            skipped_msgs -= 1
+
+                        rx_msg.append(selected)
+                        logger.warning("node {:2} multi rx msgs {} discard msg".format(
+                            self.node_id, skipped_msgs))
                         self.rx_missed_count += skipped_msgs
-                        logger.warning(
-                            "node {:2} multi rx msgs @ {} discard msg".format(
-                                self.node_id, skipped_msgs
-                            )
-                        )
-                        arr = np.array(gmsg, dtype=object)
-                        output = arr[np.random.choice(arr.shape[0])]
-                        selected = (output[0], output[1])
                     else:
-                        selected = (gmsg[0][0], gmsg[0][1])
-                    rx_msg.append(selected)
+                        rx_msg.append((gmsg[0][0], gmsg[0][1]))
+            # either only one msg or full-duplex
+            else:
+                for i, m, _ in multi_rx_msg:
+                    rx_msg.append((i, m))
 
             # log status of messages
-            if len(rx_msg) <= 0:
+            if len(rx_msg) == 0:
                 logger.critical(
                     "node {:2} no msgs survived".format(self.node_id))
             else:
@@ -178,6 +210,12 @@ class Node(Turtle):
         self.success_rx_count += len(rx_msg)
         # successful messages to the buffer
         self.rx_buffer = rx_msg
+
+    def choose_random_from_list(self, id_msg_list):
+        arr = np.array(id_msg_list, dtype=object)
+        output = arr[np.random.choice(arr.shape[0])]
+        selected = (output[0], output[1])
+        return selected
 
     def access_rx_buffer(self, i, new_packet, on_channel):
         self.available_messages.append((i, new_packet, on_channel))
