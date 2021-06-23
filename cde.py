@@ -169,21 +169,33 @@ def node_broadcast(node, neighbours, rnd, _logger):
 
     # produce heuristic packet to broadcast
     missings = np.zeros(NUM_OF_NODES, dtype=np.int8)
+    all_nei_done = True
     for ngbr in neighbours:
         _, _, ngbr_h_decoder = nodes[ngbr.node_id]
+        all_nei_done = all_nei_done and ngbr_h_decoder.is_complete()
         missings = [1 if ngbr_h_decoder.is_symbol_missing(
             sym) else missings[sym] for sym in range(NUM_OF_NODES)]
-        if False and np.sum(missings) == 0 and not ngbr_h_decoder.is_complete():
-            missings = [np.random.choice([True, False])
+    
+    # If no messages are needed generate some random
+    if np.sum(missings) == 0 and not all_nei_done:
+        missings = [np.random.choice([True, False])
                         for _ in range(NUM_OF_NODES)]
+    # zero one or two to differ from greedy
+    elif np.sum(missings) == NUM_OF_NODES:
+        missings[np.random.randint(NUM_OF_NODES)] = 0
+        missings[np.random.randint(NUM_OF_NODES)] = 0
 
-    h_pack_coe = bytearray([np.random.randint(1, field_max) if h_decoder.is_symbol_pivot(
-        sym) and missings[sym] else 0 for sym in range(NUM_OF_NODES)])
-    h_pack_msg = master_encoder.produce_symbol(h_pack_coe)
-    h_pack = {
-        'msg': h_pack_msg,
-        'coe': h_pack_coe
-    }
+    # if all neighbors done, shut up
+    if all_nei_done:
+        h_pack = None
+    else:
+        h_pack_coe = bytearray([np.random.randint(1, field_max) if h_decoder.is_symbol_pivot(
+            sym) and missings[sym] else 0 for sym in range(NUM_OF_NODES)])
+        h_pack_msg = master_encoder.produce_symbol(h_pack_coe)
+        h_pack = {
+            'msg': h_pack_msg,
+            'coe': h_pack_coe
+        }
 
     # combine all packs
     pack = (s_pack, g_pack, h_pack)

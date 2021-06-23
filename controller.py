@@ -629,9 +629,10 @@ class Controller:
             self.R2.configure(state=tk.DISABLED)
             self.R3.configure(state=tk.DISABLED)
 
-    def new_gen_enable_btns(self):
-        self.btn_nxt_gen['state'] = 'normal'
-        self.btn_nxt_rnd['state'] = 'normal'
+    def new_gen_enable_btns(self, btns=False):
+        if btns:
+            self.btn_nxt_gen['state'] = 'normal'
+            self.btn_nxt_rnd['state'] = 'normal'
 
         self.R1.configure(state=tk.NORMAL)
         self.R2.configure(state=tk.NORMAL)
