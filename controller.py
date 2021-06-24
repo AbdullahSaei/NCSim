@@ -402,7 +402,7 @@ class Controller:
 
         # Dataframes
         df = pd.DataFrame(ranks, columns=['Simple', 'Greedy', 'Heuristic'])
-        df['Round'] = r_current * np.ones(self.num_nodes, dtype=np.int8)
+        df['Rounds'] = r_current * np.ones(self.num_nodes, dtype=np.int8)
 
         # Calculations
         round_no = r_num + r_xtra
@@ -410,13 +410,13 @@ class Controller:
         
         # Graphs update
         df_ranks = df.melt(
-            'Round', var_name='Algorithm', value_name='Node Ranks')
-        temps = pd.DataFrame([{'Round': i, 'Algorithm': 'Simple', 'Node Ranks': -2}
+            'Rounds', var_name='Algorithm', value_name='Node Ranks')
+        temps = pd.DataFrame([{'Rounds': i, 'Algorithm': 'Simple', 'Node Ranks': -2}
                  for i in range(r_current)])
 
         df_ranks = temps.append(df_ranks, ignore_index=True)
 
-        sns.boxplot(x="Round", y="Node Ranks", hue='Algorithm',
+        sns.boxplot(x="Rounds", y="Node Ranks", hue='Algorithm',
                     data=df_ranks, ax=ax)
         ax.set_xticks(x_range)
 
@@ -443,8 +443,8 @@ class Controller:
         # Add line when simple complete
         if s_ranks.count(self.num_nodes) == 1:
             index = len(s_ranks) - 1
-            ax.axvline(index-0.2, ls='--', color='tab:blue')
-            ax.text(index-0.2, 0.1, "Simple done", color='tab:blue',
+            ax.axvline(index+0.2, ls='--', color='tab:blue')
+            ax.text(index+0.2, 0.1, "Simple done", color='tab:blue',
                     rotation=270, transform=ax.get_xaxis_text1_transform(0)[0])
 
             self.show_full_aod_stats(r_current)
@@ -452,15 +452,15 @@ class Controller:
         # Add line when greedy complete
         if g_ranks.count(self.num_nodes) == 1:
             index = len(g_ranks) - 1
-            ax.axvline(index, ls='--', color='tab:green')
-            ax.text(index, 0.1, "Greedy done", color='tab:green', rotation=270,
+            ax.axvline(index-0.2, ls='--', color='tab:green')
+            ax.text(index-0.2, 0.1, "Greedy done", color='tab:green', rotation=270,
                     transform=ax.get_xaxis_text1_transform(0)[0])
 
         # Add line when heuristic complete
         if h_ranks.count(self.num_nodes) == 1:
             index = len(h_ranks) - 1
-            ax.axvline(index+0.2, ls='--', color='tab:red')
-            ax.text(index+0.2, 0.1, "Heuristic done", color='tab:red',
+            ax.axvline(index, ls='--', color='tab:red')
+            ax.text(index, 0.1, "Heuristic done", color='tab:red',
                     rotation=270, transform=ax.get_xaxis_text1_transform(0)[0])
 
         # one time graph setup
