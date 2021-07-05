@@ -204,8 +204,8 @@ class Controller:
         self.df_nodes = pd.DataFrame(columns=self.summ_header)
 
         # Create Header and Tx data
-        self.headers_current = ["Round", "Avg Ranks", "Avg AoD",
-                                "Max AoD", "Min AoD", "Nodes 100%", "Nodes <50%"]
+        self.headers_current = ["Round", "SGH Avg Ranks", "SGH Avg AoD",
+                                "SGH Max AoD", "SGH Min AoD", "SGH Nodes 100%", "SGH Nodes <50%" ]
 
         # Data variable
         vals = [np.zeros(self.num_nodes)] * 3
@@ -338,23 +338,31 @@ class Controller:
         self.data = data
         # Extract data
         vals, ranks, stats = data
+        
+        avg_ranks = [int(np.mean(r)) for r in zip(*ranks)]
+        self.avg_rank.append(avg_ranks)
 
-        # prepare data
-        s_val, g_val, h_val = vals
-        s_rank, g_rank, h_rank = zip(*ranks)
-        arr = np.array(s_val)
-        avg_ranks = np.mean(s_rank)
-        self.avg_rank.append((avg_ranks, np.mean(g_rank), np.mean(h_rank)))
-
-        # Calculate full done and half done nodes
-        f_dn = len(arr[arr == 100]) if arr[arr == 100].any() else 0
-        h_dn = len(arr[arr <= 50]) if arr[arr <= 50].any() else 0
+        # prepare data vals
+        f_dn = []
+        h_dn = []
+        means = [np.round(np.mean(arr), decimals=2) for arr in vals]
+        maxs = [np.round(np.max(arr), decimals=2) for arr in vals]
+        mins = [np.round(np.min(arr), decimals=2) for arr in vals]
+        for val in vals:
+            arr = np.array(val)
+            # Calculate full done and half done nodes
+            f_dn.append(len(arr[arr == 100]))
+            h_dn.append(len(arr[arr <= 50]))
 
         # headers_current = ["Round", "Avg Ranks",
         # "Max AoD", "Avg AoD", "Nodes 100%", "Nodes <50%"]
-        run_values = [f"{r_curr}/{r_num}", f"{avg_ranks:.2f}/{self.num_nodes}",
-                      f"{arr.mean():.2f}%", f"{np.max(arr):.2f}%", f"{np.min(arr):.2f}%",
-                      f"{f_dn}/{self.num_nodes}", f"{h_dn}/{self.num_nodes}"]
+        run_values = [f"{r_curr}/{r_num}", 
+                      f"{avg_ranks}/{self.num_nodes}",
+                      f"{means}%", 
+                      f"{maxs}%", 
+                      f"{mins}%",
+                      f"{f_dn}/{self.num_nodes}", 
+                      f"{h_dn}/{self.num_nodes}"]
         display_data(self.f_current, run_values)
 
         # Show message if it is the specified round
@@ -416,8 +424,8 @@ class Controller:
 
         df_ranks = temps.append(df_ranks, ignore_index=True)
 
-        sns.boxplot(x="Rounds", y="Node Ranks", hue='Algorithm',
-                    data=df_ranks, ax=ax)
+        #sns.boxplot(x="Rounds", y="Node Ranks", hue='Algorithm',
+        #            data=df_ranks, ax=ax, flierprops=dict(marker='o', markersize=5))
         ax.set_xticks(x_range)
 
         # set the y lim to bottom, top

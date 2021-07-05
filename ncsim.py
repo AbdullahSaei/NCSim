@@ -538,13 +538,15 @@ class NCSim:
     def run_to_full(self):
         counter = 0
         while sum(self.full_AoD) != NUM_OF_NODES:
+            breaker = 100
             self.extra_rnd()
             counter = counter + 1
-            if counter == 100:
+            if counter == breaker:
                 # LOGGING:
                 self.screen.visual_output_msg(
                     f"TIMEOUT 100 runs!!!")
                 trace.error('TIMEOUT!!')
+                print(f"breaker +{breaker} rounds and no full AoD!")
                 break
 
     def end_keep_open(self):
