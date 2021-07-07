@@ -213,6 +213,11 @@ class Controller:
         stats = None
         self.data = [vals, ranks, stats]
         self.avg_rank = []
+        self.sgh_done = {
+            'Simple': False,
+            'Greedy': False,
+            'Heuristic': False
+        }
 
         # tk variables
         self.is_nxt = tk.BooleanVar(value=False)
@@ -375,9 +380,9 @@ class Controller:
         self.update_summ_tree(self.summ_tree, stats)
         self.update_hist_graph(vals, r_curr, r_num,
                                self.aod_ax, self.aod_canvas)
-        self.update_ranks_graph(ranks, r_curr, r_num, r_xtra,
-                                self.ranks_ax, self.ranks_canvas)
         self.update_oh_graph(oh_vals, r_curr, r_num)
+        self.update_ranks_graph(ranks, r_curr, r_num, r_xtra,
+                                self.ranks_ax, self.ranks_canvas, oh_vals)
 
     def update_hist_graph(self, vals, rnd, num_of_rnds, ax, canvas):
         # prepare data
@@ -406,7 +411,7 @@ class Controller:
         # Deploy the plot
         canvas.draw()
 
-    def update_ranks_graph(self, ranks, r_current, r_num, r_xtra, ax, canvas):
+    def update_ranks_graph(self, ranks, r_current, r_num, r_xtra, ax, canvas, oh_data):
         s_ranks, g_ranks, h_ranks = zip(*self.avg_rank)
 
         # Dataframes
@@ -455,6 +460,7 @@ class Controller:
             ax.axvline(index+0.2, ls='--', color='tab:blue')
             ax.text(index+0.2, 0.1, "Simple done", color='tab:blue',
                     rotation=270, transform=ax.get_xaxis_text1_transform(0)[0])
+            self.sgh_done['Simple'] = oh_data['Simple']
 
             self.show_full_aod_stats(r_current)
 
@@ -464,6 +470,7 @@ class Controller:
             ax.axvline(index-0.2, ls='--', color='tab:green')
             ax.text(index-0.2, 0.1, "Greedy done", color='tab:green', rotation=270,
                     transform=ax.get_xaxis_text1_transform(0)[0])
+            self.sgh_done['Greedy'] = oh_data['Greedy']
 
         # Add line when heuristic complete
         if h_ranks.count(self.num_nodes) == 1:
@@ -471,6 +478,7 @@ class Controller:
             ax.axvline(index, ls='--', color='tab:red')
             ax.text(index, 0.1, "Heuristic done", color='tab:red',
                     rotation=270, transform=ax.get_xaxis_text1_transform(0)[0])
+            self.sgh_done['Heuristic'] = oh_data['Heuristic']
 
         # one time graph setup
         if not r_xtra and not r_current:
@@ -491,17 +499,35 @@ class Controller:
         ax.legend([], [], frameon=False)
         canvas.draw()
 
+    def show_hline_oh(self, vals):
+        ax = self.oh_ax
+        canvas = self.oh_canvas
+
+        if vals:
+            clr = {'Heuristic': 'tab:red',
+                   'Greedy': 'tab:green', 'Simple': 'tab:blue'}
+            mrg = {'Simple': 0, 'Greedy': 1, 'Heuristic': 2}
+            for k, v in self.sgh_done.items():
+                if v and v != -1:
+                    ax.axhline(v, ls=':', color=clr[k])
+                    ax.text(mrg[k]-0.25, v+0.1, f"{k} done", color="black")
+                    self.sgh_done[k] = -1
+
+        canvas.draw()
+
     def update_oh_graph(self, oh_vals, rnd, num_of_rnds) -> None:
 
         ax = self.oh_ax
         canvas = self.oh_canvas
 
         # Graphs update
-        ax.clear()  # clear axes from previous plot
+        #ax.clear()   # clear axes from previous plot
 
         if oh_vals:
             # Seaborn Plot
-            sns.barplot(x=list(oh_vals.keys()), y=list(oh_vals.values()), ax=ax)
+            sns.barplot(x=list(oh_vals.keys()),
+                        y=list(oh_vals.values()), ax=ax)
+            self.show_hline_oh(oh_vals)
 
         # Update title with current round number
         ax.set_title(
@@ -550,8 +576,14 @@ class Controller:
     def new_generation_cleanup(self, clear_frames=True):
         # Clean up
         self.avg_rank = []
+        self.sgh_done = {
+            'Simple': False,
+            'Greedy': False,
+            'Heuristic': False
+        }
 
         self.ranks_ax.clear()
+        self.oh_ax.clear()
 
         # Clear dataframe
         self.df_nodes = pd.DataFrame(columns=self.summ_header)
