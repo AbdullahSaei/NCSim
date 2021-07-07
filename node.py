@@ -32,6 +32,9 @@ class Node(Turtle):
         self.ig_msgs_count = 0
         self.packet_loss_count = 0
 
+        # additive Overhead 
+        self.additive_overhead = [0, 0, 0]
+
     def clear_counters(self):
         self.last_aod = (0, 0, 0)
         self.tx_count = 0
@@ -41,6 +44,7 @@ class Node(Turtle):
         self.rx_missed_count = 0
         self.ig_msgs_count = 0
         self.packet_loss_count = 0
+        self.additive_overhead = [0, 0, 0]
 
     def place_node(self, position, only_fd=None):
         self.shape("circle")
@@ -219,6 +223,12 @@ class Node(Turtle):
 
     def access_rx_buffer(self, i, new_packet, on_channel):
         self.available_messages.append((i, new_packet, on_channel))
+
+    def add_to_overhead(self, vals):
+        self.additive_overhead = [cur + neu for cur, neu in zip(self.additive_overhead, vals)]
+    
+    def get_additive_oh(self):
+        return self.additive_overhead
 
     def get_rx_packets(self):
         if len(self.rx_buffer) > 0:

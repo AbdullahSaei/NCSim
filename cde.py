@@ -56,7 +56,7 @@ field = fifi.get(FINITE_FIELD, "binary8")
 field_max = 2 ** int(fifi_num.get(FINITE_FIELD, 8))
 symbols = NUM_OF_NODES
 symbol_size = PACKET_SIZE
-sparse = [0.5, 0.5]
+simple_sparse = [0.5, 0.5]
 
 # Pseudo random seed
 np.random.seed(SEED_VALUE)
@@ -148,24 +148,33 @@ def generate_data():
 def node_broadcast(node, neighbours, rnd, _logger):
     # get kodo encoder and decoder
     s_decoder, g_decoder, h_decoder = nodes[node.node_id]
+    
+    # calculate additive overhead
+    s_overhead = 0
+    g_overhead = 0
+    h_overhead = 0
 
     # produce simple packet to broadcast
-    s_pack_coe = bytearray([np.random.choice([np.random.randint(field_max), 0], p=sparse) if s_decoder.is_symbol_pivot(
-        sym) else 0 for sym in range(NUM_OF_NODES)])
-    s_pack_msg = master_encoder.produce_symbol(s_pack_coe)
+    s_pack_coe = [np.random.choice([np.random.randint(field_max), 0], p=simple_sparse) if s_decoder.is_symbol_pivot(
+        sym) else 0 for sym in range(NUM_OF_NODES)]
+    s_coe = bytearray(s_pack_coe)
+    s_pack_msg = master_encoder.produce_symbol(s_coe)
     s_pack = {
         'msg': s_pack_msg,
-        'coe': s_pack_coe
+        'coe': s_coe
     }
+    s_overhead = np.count_nonzero(s_pack_coe) * 8
 
     # produce greedy packet to broadcast
-    g_pack_coe = bytearray([np.random.randint(1, field_max) if g_decoder.is_symbol_pivot(
-        sym) else 0 for sym in range(NUM_OF_NODES)])
-    g_pack_msg = master_encoder.produce_symbol(g_pack_coe)
+    g_pack_coe = [np.random.randint(1, field_max) if g_decoder.is_symbol_pivot(
+        sym) else 0 for sym in range(NUM_OF_NODES)]
+    g_coe = bytearray(g_pack_coe)
+    g_pack_msg = master_encoder.produce_symbol(g_coe)
     g_pack = {
         'msg': g_pack_msg,
-        'coe': g_pack_coe
+        'coe': g_coe
     }
+    g_overhead = np.count_nonzero(g_pack_coe) * 8
 
     # produce heuristic packet to broadcast
     missings = np.zeros(NUM_OF_NODES, dtype=np.int8)
@@ -175,30 +184,37 @@ def node_broadcast(node, neighbours, rnd, _logger):
         all_nei_done = all_nei_done and ngbr_h_decoder.is_complete()
         missings = [1 if ngbr_h_decoder.is_symbol_missing(
             sym) else missings[sym] for sym in range(NUM_OF_NODES)]
-    
-    # If no messages are needed generate some random
+
+    # If no missing syms are needed generate some random
     if np.sum(missings) == 0 and not all_nei_done:
         missings = [np.random.choice([True, False])
-                        for _ in range(NUM_OF_NODES)]
-    # zero one or two to differ from greedy
-    elif np.sum(missings) == NUM_OF_NODES:
+                    for _ in range(NUM_OF_NODES)]
+    # zero one or two syms to differ from greedy
+    elif False and np.sum(missings) == NUM_OF_NODES:
         missings[np.random.randint(NUM_OF_NODES)] = 0
         missings[np.random.randint(NUM_OF_NODES)] = 0
 
     # if all neighbors done, shut up
     if all_nei_done:
         h_pack = None
+        h_overhead = 0
     else:
-        h_pack_coe = bytearray([np.random.randint(1, field_max) if h_decoder.is_symbol_pivot(
-            sym) and missings[sym] else 0 for sym in range(NUM_OF_NODES)])
-        h_pack_msg = master_encoder.produce_symbol(h_pack_coe)
+        h_pack_coe = [np.random.randint(1, field_max) if h_decoder.is_symbol_pivot(
+            sym) and missings[sym] else 0 for sym in range(NUM_OF_NODES)]
+        h_coe = bytearray(h_pack_coe)
+        h_pack_msg = master_encoder.produce_symbol(h_coe)
         h_pack = {
             'msg': h_pack_msg,
-            'coe': h_pack_coe
+            'coe': h_coe
         }
+        # nonzeros of Coding vector + src ID + done 1 bit
+        h_overhead = np.count_nonzero(h_pack_coe) * 8 + 8 + 1
 
     # combine all packs
     pack = (s_pack, g_pack, h_pack)
+
+    # update overhead counters
+    node.add_to_overhead([s_overhead, g_overhead, h_overhead])
 
     # log data
     # log message and channel

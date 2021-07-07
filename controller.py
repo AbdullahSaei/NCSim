@@ -205,7 +205,7 @@ class Controller:
 
         # Create Header and Tx data
         self.headers_current = ["Round", "SGH Avg Ranks", "SGH Avg AoD",
-                                "SGH Max AoD", "SGH Min AoD", "SGH Nodes 100%", "SGH Nodes <50%" ]
+                                "SGH Max AoD", "SGH Min AoD", "SGH Nodes 100%", "SGH Nodes <50%"]
 
         # Data variable
         vals = [np.zeros(self.num_nodes)] * 3
@@ -334,11 +334,11 @@ class Controller:
 
         return f_config, f_current, f_at_tx, f_at_100
 
-    def update_analysis(self, data, r_curr=0, r_num=0, r_xtra=1):
+    def update_analysis(self, data, oh_vals={}, r_curr=0, r_num=0, r_xtra=1):
         self.data = data
         # Extract data
         vals, ranks, stats = data
-        
+
         avg_ranks = [int(np.mean(r)) for r in zip(*ranks)]
         self.avg_rank.append(avg_ranks)
 
@@ -356,12 +356,12 @@ class Controller:
 
         # headers_current = ["Round", "Avg Ranks",
         # "Max AoD", "Avg AoD", "Nodes 100%", "Nodes <50%"]
-        run_values = [f"{r_curr}/{r_num}", 
+        run_values = [f"{r_curr}/{r_num}",
                       f"{avg_ranks}/{self.num_nodes}",
-                      f"{means}%", 
-                      f"{maxs}%", 
+                      f"{means}%",
+                      f"{maxs}%",
                       f"{mins}%",
-                      f"{f_dn}/{self.num_nodes}", 
+                      f"{f_dn}/{self.num_nodes}",
                       f"{h_dn}/{self.num_nodes}"]
         display_data(self.f_current, run_values)
 
@@ -377,6 +377,7 @@ class Controller:
                                self.aod_ax, self.aod_canvas)
         self.update_ranks_graph(ranks, r_curr, r_num, r_xtra,
                                 self.ranks_ax, self.ranks_canvas)
+        self.update_oh_graph(oh_vals, r_curr, r_num)
 
     def update_hist_graph(self, vals, rnd, num_of_rnds, ax, canvas):
         # prepare data
@@ -415,17 +416,17 @@ class Controller:
         # Calculations
         round_no = r_num + r_xtra
         x_range = np.arange(0, round_no + 1)
-        
+
         # Graphs update
         df_ranks = df.melt(
             'Rounds', var_name='Algorithm', value_name='Node Ranks')
         temps = pd.DataFrame([{'Rounds': i, 'Algorithm': 'Simple', 'Node Ranks': -2}
-                 for i in range(r_current)])
+                              for i in range(r_current)])
 
         df_ranks = temps.append(df_ranks, ignore_index=True)
 
-        #sns.boxplot(x="Rounds", y="Node Ranks", hue='Algorithm',
-        #            data=df_ranks, ax=ax, flierprops=dict(marker='o', markersize=5))
+        sns.boxplot(x="Rounds", y="Node Ranks", hue='Algorithm',
+                    data=df_ranks, ax=ax, flierprops=dict(marker='o', markersize=5))
         ax.set_xticks(x_range)
 
         # set the y lim to bottom, top
@@ -488,6 +489,24 @@ class Controller:
             ax.add_artist(leg1)
 
         ax.legend([], [], frameon=False)
+        canvas.draw()
+
+    def update_oh_graph(self, oh_vals, rnd, num_of_rnds) -> None:
+
+        ax = self.oh_ax
+        canvas = self.oh_canvas
+
+        # Graphs update
+        ax.clear()  # clear axes from previous plot
+
+        if oh_vals:
+            # Seaborn Plot
+            sns.barplot(x=list(oh_vals.keys()), y=list(oh_vals.values()), ax=ax)
+
+        # Update title with current round number
+        ax.set_title(
+            f'Avg additive overhead of {self.num_nodes} nodes @ round {rnd}/{num_of_rnds}')
+        # Deploy the plot
         canvas.draw()
 
     def show_full_aod_stats(self, r_curr):
