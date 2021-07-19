@@ -189,10 +189,6 @@ def node_broadcast(node, neighbours, rnd, _logger):
     if np.sum(missings) == 0 and not all_nei_done:
         missings = [np.random.choice([True, False])
                     for _ in range(NUM_OF_NODES)]
-    # zero one or two syms to differ from greedy
-    elif False and np.sum(missings) == NUM_OF_NODES:
-        missings[np.random.randint(NUM_OF_NODES)] = 0
-        missings[np.random.randint(NUM_OF_NODES)] = 0
 
     # if all neighbors done, shut up
     if all_nei_done:
@@ -209,6 +205,8 @@ def node_broadcast(node, neighbours, rnd, _logger):
         }
         # nonzeros of Coding vector + src ID + done 1 bit
         h_overhead = np.count_nonzero(h_pack_coe) * 8 + 8 + 1
+
+        # 10 Nodes * 8 bits coe = 80
 
     # combine all packs
     pack = (s_pack, g_pack, h_pack)

@@ -213,6 +213,7 @@ class Controller:
         stats = None
         self.data = [vals, ranks, stats]
         self.avg_rank = []
+        self.oh_vals = pd.DataFrame()
         self.sgh_done = {
             'Simple': False,
             'Greedy': False,
@@ -428,10 +429,10 @@ class Controller:
         temps = pd.DataFrame([{'Rounds': i, 'Algorithm': 'Simple', 'Node Ranks': -2}
                               for i in range(r_current)])
 
-        df_ranks = temps.append(df_ranks, ignore_index=True)
+        df_ranks = temps.append(df_ranks, ignore_index=True, sort=False)
 
         sns.boxplot(x="Rounds", y="Node Ranks", hue='Algorithm',
-                    data=df_ranks, ax=ax, flierprops=dict(marker='o', markersize=5))
+                    data=df_ranks, ax=ax, flierprops=dict(marker='o', markersize=2))
         ax.set_xticks(x_range)
 
         # set the y lim to bottom, top
@@ -501,19 +502,18 @@ class Controller:
 
     def show_hline_oh(self, vals):
         ax = self.oh_ax
-        canvas = self.oh_canvas
 
         if vals:
+            ax.xaxis.grid(True)
             clr = {'Heuristic': 'tab:red',
                    'Greedy': 'tab:green', 'Simple': 'tab:blue'}
             mrg = {'Simple': 0, 'Greedy': 1, 'Heuristic': 2}
             for k, v in self.sgh_done.items():
-                if v and v != -1:
+                if v:
+                    v /=1024
                     ax.axhline(v, ls=':', color=clr[k])
-                    ax.text(mrg[k]-0.25, v+0.1, f"{k} done", color="black")
-                    self.sgh_done[k] = -1
-
-        canvas.draw()
+                    ax.text(0.5, v+0.1, f"{k} done", color=clr[k])
+                    #self.sgh_done[k] = -1
 
     def update_oh_graph(self, oh_vals, rnd, num_of_rnds) -> None:
 
@@ -521,17 +521,29 @@ class Controller:
         canvas = self.oh_canvas
 
         # Graphs update
-        #ax.clear()   # clear axes from previous plot
 
         if oh_vals:
+            ax.clear()   # clear axes from previous plot
+            ax.set_xticks(np.arange(rnd+1))
+            # update var
+            long_dict = [{
+                "Rounds": rnd,
+                "Algorithm": algh,
+                "Additive_Overhead_Kbits": add_oh/1024
+            } for algh, add_oh in oh_vals.items()]
             # Seaborn Plot
-            sns.barplot(x=list(oh_vals.keys()),
-                        y=list(oh_vals.values()), ax=ax)
+            self.oh_vals = self.oh_vals.append(
+                long_dict, ignore_index=True, sort=False)
+            sns.lineplot(x="Rounds", y="Additive_Overhead_Kbits",
+                         hue="Algorithm", data=self.oh_vals, ax=ax)
             self.show_hline_oh(oh_vals)
 
         # Update title with current round number
         ax.set_title(
             f'Avg additive overhead of {self.num_nodes} nodes @ round {rnd}/{num_of_rnds}')
+
+        ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
+                             fancybox=True, shadow=True, ncol=3)
         # Deploy the plot
         canvas.draw()
 
@@ -576,6 +588,7 @@ class Controller:
     def new_generation_cleanup(self, clear_frames=True):
         # Clean up
         self.avg_rank = []
+        self.oh_vals = pd.DataFrame()
         self.sgh_done = {
             'Simple': False,
             'Greedy': False,

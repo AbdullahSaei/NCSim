@@ -483,9 +483,9 @@ class NCSim:
             round_num, next(aods_tuples), ranks[i]) for i, n in enumerate(self.nodes)]
         oh_nodes = list(zip(*[n.get_additive_oh() for n in self.nodes]))
         oh_dict = {
-            'Simple':np.average(oh_nodes[0]),
-            'Greedy':np.average(oh_nodes[1]),
-            'Heuristic':np.average(oh_nodes[2])
+            'Simple':np.sum(oh_nodes[0]),
+            'Greedy':np.sum(oh_nodes[1]),
+            'Heuristic':np.sum(oh_nodes[2])
         }
         self.ctrl.update_analysis(
             [aods, ranks, stats], oh_dict, round_num, ROUNDS, EXTRA_RNDS)
