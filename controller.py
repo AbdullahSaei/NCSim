@@ -7,6 +7,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from turtle import Turtle
 import matplotlib
+import typing
 
 plt.style.use('seaborn-deep')
 matplotlib.use('TkAgg')
@@ -118,7 +119,7 @@ class MouseClick:
             if self.focus_node[0] in [n.node_id for n in node.get_neighbors()]:
                 reachables.append((node.node_id, node))
 
-        i, node = self.focus_node
+        _, node = self.focus_node
         for i_n, n in reachables:
             snd_pckt = self.turs[i_n]
             snd_pckt.setposition(n.pos())
@@ -191,6 +192,7 @@ def display_data(frame, values, headers=None, assert_empty=False):
     lbl_vals.config(font='{Fira Sans} 12', text=(
         "\n".join(map(str, values))))
     lbl_vals.pack(side=tk.LEFT, pady=10, padx=5, fill=tk.BOTH)
+    return True
 
 
 class Controller:
@@ -210,9 +212,9 @@ class Controller:
         # Data variable
         vals = [np.zeros(self.num_nodes)] * 3
         ranks = [(1, 1, 1) for _ in range(self.num_nodes)]
-        stats = None
+        stats : typing.Any = None
         self.data = [vals, ranks, stats]
-        self.avg_rank = []
+        self.avg_rank :typing.List[float] = []
         self.oh_vals = pd.DataFrame()
         self.sgh_done = {
             'Simple': False,
@@ -340,7 +342,7 @@ class Controller:
 
         return f_config, f_current, f_at_tx, f_at_100
 
-    def update_analysis(self, data, oh_vals={}, r_curr=0, r_num=0, r_xtra=1):
+    def update_analysis(self, data, oh_vals=False, r_curr=0, r_num=0, r_xtra=1):
         self.data = data
         # Extract data
         vals, ranks, stats = data
@@ -389,7 +391,7 @@ class Controller:
         # prepare data
         s_val, g_val, h_val = vals
         # Graphs update
-        n_range = range(self.num_nodes)
+        n_range = list(range(self.num_nodes))
         ax.clear()  # clear axes from previous plot
         ax.set_xticks(n_range)
         ax.set_ylim(0, 100)  # set the y lim to bottom, top
@@ -507,7 +509,7 @@ class Controller:
             ax.xaxis.grid(True)
             clr = {'Heuristic': 'tab:red',
                    'Greedy': 'tab:green', 'Simple': 'tab:blue'}
-            mrg = {'Simple': 0, 'Greedy': 1, 'Heuristic': 2}
+            # mrg = {'Simple': 0, 'Greedy': 1, 'Heuristic': 2}
             for k, v in self.sgh_done.items():
                 if v:
                     v /=1024
@@ -538,12 +540,12 @@ class Controller:
                          hue="Algorithm", data=self.oh_vals, ax=ax)
             self.show_hline_oh(oh_vals)
 
-        # Update title with current round number
-        ax.set_title(
-            f'Avg additive overhead of {self.num_nodes} nodes @ round {rnd}/{num_of_rnds}')
+            # Update title with current round number
+            ax.set_title(
+                f'Avg additive overhead of {self.num_nodes} nodes @ round {rnd}/{num_of_rnds}')
 
-        ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
-                             fancybox=True, shadow=True, ncol=3)
+            ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
+                                 fancybox=True, shadow=True, ncol=3)
         # Deploy the plot
         canvas.draw()
 
@@ -572,13 +574,14 @@ class Controller:
 
         # display values
         display_data(self.f_at_100, values, headers)
+        return True
 
     def treeview_sort_column(self, tv, col, reverse):
         ltv = [(int(tv.set(k, col)), k) for k in tv.get_children('')]
         ltv.sort(reverse=reverse)
 
         # rearrange items in sorted positions
-        for index, (val, k) in enumerate(ltv):
+        for index, (_, k) in enumerate(ltv):
             tv.move(k, '', index)
 
         # reverse sort next time

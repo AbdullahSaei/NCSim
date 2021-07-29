@@ -6,6 +6,7 @@ import kodo
 import json
 import numpy as np
 import string
+import typing
 
 """
 Cooperative data exchange network using network coding.
@@ -62,14 +63,14 @@ simple_sparse = [0.5, 0.5]
 np.random.seed(SEED_VALUE)
 
 # Global scope Create list of encoder and decoder triples
-nodes = []
-data_in = []
-simple_data_out = []
-greedy_data_out = []
-heuristic_data_out = []
+nodes : typing.List[typing.List[kodo.RLNCDecoder]] = []
+data_in: typing.List[bytearray] = []
+simple_data_out :typing.List[bytearray]= []
+greedy_data_out :typing.List[bytearray]= []
+heuristic_data_out: typing.List[bytearray] = []
 
 # Master encoder
-master_data_in = []
+master_data_in: bytearray 
 master_encoder = kodo.RLNCEncoder(field, symbols, symbol_size)
 
 
@@ -80,14 +81,12 @@ def kodo_init():
     global simple_data_out
     global greedy_data_out
     global heuristic_data_out
-    global master_data_in
 
     nodes = []
     data_in = []
     simple_data_out = []
     greedy_data_out = []
     heuristic_data_out = []
-    master_data_in = []
 
     # init one encoder
     master_encoder.set_seed(SEED_VALUE)
@@ -177,7 +176,7 @@ def node_broadcast(node, neighbours, rnd, _logger):
     g_overhead = np.count_nonzero(g_pack_coe) * 8
 
     # produce heuristic packet to broadcast
-    missings = np.zeros(NUM_OF_NODES, dtype=np.int8)
+    missings = [0 for _ in range(NUM_OF_NODES)]
     all_nei_done = True
     for ngbr in neighbours:
         _, _, ngbr_h_decoder = nodes[ngbr.node_id]
@@ -237,7 +236,7 @@ def node_receive(node, packets, rnd, _logger):
 
     # consume received messages
     if len(packets) > 0:
-        for src, pkt in packets:
+        for _, pkt in packets:
             s_pkt, g_pkt, h_pkt = pkt
 
             # heuristic decoder

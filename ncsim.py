@@ -1,4 +1,5 @@
 from turtle import Turtle
+import typing
 from node import Node
 from controller import MouseClick, Controller
 from platform import system as os_type
@@ -129,11 +130,11 @@ class NCSim:
         # Create place holder of the data per gen
         self.data_in = ""
         # Create List of Nodes Variable
-        self.nodes = []
+        self.nodes: typing.List[Node] = []
         # Call Nodes Init Method
         self.create_nodes()
         # store AoDs
-        self.full_AoD = []
+        self.full_AoD: typing.List[float] = []
 
         # create right click listener
         self.mclick = MouseClick(self.screen.root, self.nodes)
@@ -272,11 +273,11 @@ class NCSim:
             # Try to place the nodes correctly
             done = False
             # for mutations if distribution failed
-            c = 0
+            c = 0.0
             # try until successful
             while not done:
                 Q_s = create_quarters(c)
-                c = c + 0.01
+                c += 0.01
                 done = distribute_nodes(Q_s)
 
         # IF GRID TOPOLOGY
@@ -390,8 +391,8 @@ class NCSim:
             time.sleep(ncsv.SCREEN_REFRESH_TIME)
 
             # Choose time and frequency channels
-            freq = np.random.choice(range(node.ch_num))
-            timeslot = np.random.choice(range(node.ts_num))
+            freq = np.random.randint(node.ch_num)
+            timeslot = np.random.randint(node.ts_num)
             # set the random chosen channel
             node.set_sending_channel(freq, timeslot)
 
@@ -457,7 +458,8 @@ class NCSim:
         print("\nGeneration {} \n".format(g))
         # clean up before new generation
         self.ctrl.new_generation_cleanup()
-        [n.clear_counters() for n in self.nodes]
+        for n in self.nodes:
+            n.clear_counters()
 
         # Generate new data
         cde.generate_data()
@@ -477,10 +479,10 @@ class NCSim:
     def end_round(self, round_num):
         # calculate data for the round
         aods = cde.calculate_aod(round_num, _logger=kpi)
-        aods_tuples = zip(*aods)
+        aods_tuples = list(zip(*aods))
         ranks = [cde.get_ranks(n.node_id) for n in self.nodes]
         stats = [n.print_aod_percentage(
-            round_num, next(aods_tuples), ranks[i]) for i, n in enumerate(self.nodes)]
+            round_num, aods_tuples[i], ranks[i]) for i, n in enumerate(self.nodes)]
         oh_nodes = list(zip(*[n.get_additive_oh() for n in self.nodes]))
         oh_dict = {
             'Simple':np.sum(oh_nodes[0]),
