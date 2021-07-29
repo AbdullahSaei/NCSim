@@ -1,5 +1,6 @@
 from turtle import Turtle
 import numpy as np
+import typing
 
 
 class Node(Turtle):
@@ -11,9 +12,9 @@ class Node(Turtle):
 
         # simulation configuration
         self.buffer_size = int(kwargs.get("buf_size", 100))
-        self.neighbors = []
-        self.available_messages = []
-        self.rx_buffer = []
+        self.neighbors: typing.List[Node] = []
+        self.available_messages : typing.List[tuple]= []
+        self.rx_buffer : list = []
         self.ch_num = int(kwargs.get("channels", 2))
         self.ts_num = int(kwargs.get("timeslots", 2))
         self.sending_channel = (0, 0)
@@ -234,7 +235,7 @@ class Node(Turtle):
         if len(self.rx_buffer) > 0:
             # packs = []
             s = ""
-            for src, pack in self.rx_buffer:
+            for src, _ in self.rx_buffer:
                 s += "{:2} ".format(src)
                 # packs.append(pack)
 
