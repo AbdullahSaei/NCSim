@@ -3,6 +3,13 @@ import numpy as np
 import typing
 
 
+def choose_random_from_list(id_msg_list):
+    arr = np.array(id_msg_list, dtype=object)
+    output = arr[np.random.choice(arr.shape[0])]
+    selected = (output[0], output[1])
+    return selected
+
+
 class Node(Turtle):
     def __init__(self, node_id, **kwargs):
         super().__init__()
@@ -13,8 +20,8 @@ class Node(Turtle):
         # simulation configuration
         self.buffer_size = int(kwargs.get("buf_size", 100))
         self.neighbors: typing.List[Node] = []
-        self.available_messages : list[tuple]= []
-        self.rx_buffer : list = []
+        self.available_messages: list[tuple] = []
+        self.rx_buffer: list = []
         self.ch_num = int(kwargs.get("channels", 2))
         self.ts_num = int(kwargs.get("timeslots", 2))
         self.sending_channel = (0, 0)
@@ -105,7 +112,7 @@ class Node(Turtle):
                 if freq == 1:
                     unq_msgs.append((i, m, src))
                 elif h_freq == 1:
-                    #smpl, grdy, hrst = m
+                    # smpl, grdy, hrst = m
                     logger.warning(
                         "node {:2} heuristic survived collision @ {}".format(
                             self.node_id, src
@@ -165,18 +172,18 @@ class Node(Turtle):
                             (i, m) for i, m, ch in gmsg if m[-1] and not m[0]]
                         skipped_msgs = len(gmsg) - 1
 
-                        selected = self.choose_random_from_list(gmsg)
+                        selected = choose_random_from_list(gmsg)
 
                         # heuristic place is empty
                         if msgs_h_nonzeros and not selected[1][-1]:
                             rx_msg.append(selected)
-                            selected = self.choose_random_from_list(
+                            selected = choose_random_from_list(
                                 msgs_h_nonzeros)
                             skipped_msgs -= 1
                         # simple place is empty
                         elif msgs_s_nonzeros and not selected[1][0]:
                             rx_msg.append(selected)
-                            selected = self.choose_random_from_list(
+                            selected = choose_random_from_list(
                                 msgs_s_nonzeros)
                             skipped_msgs -= 1
 
@@ -215,12 +222,6 @@ class Node(Turtle):
         self.success_rx_count += len(rx_msg)
         # successful messages to the buffer
         self.rx_buffer = rx_msg
-
-    def choose_random_from_list(self, id_msg_list):
-        arr = np.array(id_msg_list, dtype=object)
-        output = arr[np.random.choice(arr.shape[0])]
-        selected = (output[0], output[1])
-        return selected
 
     def access_rx_buffer(self, i, new_packet, on_channel):
         self.available_messages.append((i, new_packet, on_channel))

@@ -149,7 +149,7 @@ class MouseClick:
         dis = [n.distance(pos) for n in self.nodes]
         nearest_node = self.nodes[dis.index(min(dis))]
         self.focus_node = (dis.index(min(dis)), nearest_node) if (
-            min(dis) < 15) else None
+                min(dis) < 15) else None
         return self.focus_node
 
     def left_click(self, x, y):
@@ -212,9 +212,9 @@ class Controller:
         # Data variable
         vals = [np.zeros(self.num_nodes)] * 3
         ranks = [(1, 1, 1) for _ in range(self.num_nodes)]
-        stats : typing.Any = None
+        stats: typing.Any = None
         self.data = [vals, ranks, stats]
-        self.avg_rank :typing.List[float] = []
+        self.avg_rank: typing.List[list] = []
         self.oh_vals = pd.DataFrame()
         self.sgh_done = {
             'Simple': False,
@@ -354,8 +354,8 @@ class Controller:
         f_dn = []
         h_dn = []
         means = [np.round(np.mean(arr), decimals=2) for arr in vals]
-        maxs = [np.round(np.max(arr), decimals=2) for arr in vals]
-        mins = [np.round(np.min(arr), decimals=2) for arr in vals]
+        maxes = [np.round(np.max(arr), decimals=2) for arr in vals]
+        mines = [np.round(np.min(arr), decimals=2) for arr in vals]
         for val in vals:
             arr = np.array(val)
             # Calculate full done and half done nodes
@@ -367,8 +367,8 @@ class Controller:
         run_values = [f"{r_curr}/{r_num}",
                       f"{avg_ranks}/{self.num_nodes}",
                       f"{means}%",
-                      f"{maxs}%",
-                      f"{mins}%",
+                      f"{maxes}%",
+                      f"{mines}%",
                       f"{f_dn}/{self.num_nodes}",
                       f"{h_dn}/{self.num_nodes}"]
         display_data(self.f_current, run_values)
@@ -398,7 +398,7 @@ class Controller:
 
         # Create dataframe
         df = pd.DataFrame(data=zip(s_val, g_val, h_val), columns=[
-                          "simple", "greedy", "heuristic"])
+            "simple", "greedy", "heuristic"])
         df['Nodes'] = n_range
         data = df.melt('Nodes', var_name='Algorithm',
                        value_name='Availability of Data percentage')
@@ -449,19 +449,19 @@ class Controller:
             h_res = np.interp(r_num, x_range, h_ranks)
 
             ax.axhline(s_res, ls='--', color='tab:blue')
-            ax.text(0.05, s_res+0.1, "Simple", color='tab:blue')
+            ax.text(0.05, s_res + 0.1, "Simple", color='tab:blue')
 
             ax.axhline(g_res, ls='--', color='tab:green')
-            ax.text(0.05, g_res+0.1, "Greedy", color='tab:green')
+            ax.text(0.05, g_res + 0.1, "Greedy", color='tab:green')
 
             ax.axhline(h_res, ls='--', color='tab:red')
-            ax.text(0.05, h_res+0.1, "Heuristic", color='tab:red')
+            ax.text(0.05, h_res + 0.1, "Heuristic", color='tab:red')
 
         # Add line when simple complete
         if s_ranks.count(self.num_nodes) == 1:
             index = len(s_ranks) - 1
-            ax.axvline(index+0.2, ls='--', color='tab:blue')
-            ax.text(index+0.2, 0.1, "Simple done", color='tab:blue',
+            ax.axvline(index + 0.2, ls='--', color='tab:blue')
+            ax.text(index + 0.2, 0.1, "Simple done", color='tab:blue',
                     rotation=270, transform=ax.get_xaxis_text1_transform(0)[0])
             self.sgh_done['Simple'] = oh_data['Simple']
 
@@ -470,8 +470,8 @@ class Controller:
         # Add line when greedy complete
         if g_ranks.count(self.num_nodes) == 1:
             index = len(g_ranks) - 1
-            ax.axvline(index-0.2, ls='--', color='tab:green')
-            ax.text(index-0.2, 0.1, "Greedy done", color='tab:green', rotation=270,
+            ax.axvline(index - 0.2, ls='--', color='tab:green')
+            ax.text(index - 0.2, 0.1, "Greedy done", color='tab:green', rotation=270,
                     transform=ax.get_xaxis_text1_transform(0)[0])
             self.sgh_done['Greedy'] = oh_data['Greedy']
 
@@ -487,7 +487,7 @@ class Controller:
         if not r_xtra and not r_current:
             # Add horizontal lines
             ax.axhline(self.num_nodes, ls=':', color='r')
-            ax.text(0.1, self.num_nodes+0.1, "Max Rank", color='r')
+            ax.text(0.1, self.num_nodes + 0.1, "Max Rank", color='r')
 
             ax.axvline(r_num, ls=':', color='r')
             ax.text(r_num, 0.1, f"tx = {r_num}", color='r',
@@ -512,10 +512,10 @@ class Controller:
             # mrg = {'Simple': 0, 'Greedy': 1, 'Heuristic': 2}
             for k, v in self.sgh_done.items():
                 if v:
-                    v /=1024
+                    v /= 1024
                     ax.axhline(v, ls=':', color=clr[k])
-                    ax.text(0.5, v+0.1, f"{k} done", color=clr[k])
-                    #self.sgh_done[k] = -1
+                    ax.text(0.5, v + 0.1, f"{k} done", color=clr[k])
+                    # self.sgh_done[k] = -1
 
     def update_oh_graph(self, oh_vals, rnd, num_of_rnds) -> None:
 
@@ -525,14 +525,14 @@ class Controller:
         # Graphs update
 
         if oh_vals:
-            ax.clear()   # clear axes from previous plot
-            ax.set_xticks(np.arange(rnd+1))
+            ax.clear()  # clear axes from previous plot
+            ax.set_xticks(np.arange(rnd + 1))
             # update var
             long_dict = [{
                 "Rounds": rnd,
-                "Algorithm": algh,
-                "Additive_Overhead_Kbits": add_oh/1024
-            } for algh, add_oh in oh_vals.items()]
+                "Algorithm": alg,
+                "Additive_Overhead_Kbits": add_oh / 1024
+            } for alg, add_oh in oh_vals.items()]
             # Seaborn Plot
             self.oh_vals = self.oh_vals.append(
                 long_dict, ignore_index=True, sort=False)
@@ -545,7 +545,7 @@ class Controller:
                 f'Avg additive overhead of {self.num_nodes} nodes @ round {rnd}/{num_of_rnds}')
 
             ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
-                                 fancybox=True, shadow=True, ncol=3)
+                      fancybox=True, shadow=True, ncol=3)
         # Deploy the plot
         canvas.draw()
 
@@ -559,8 +559,7 @@ class Controller:
 
         # Calculate ratio
         reception_ratio = df['rx_success'].sum() / df['rx_total'].sum() * 100
-        collision_ratio = df['rx_collisions'].sum() / \
-            df['rx_total'].sum() * 100
+        collision_ratio = df['rx_collisions'].sum() / df['rx_total'].sum() * 100
         ignored_ratio = df['rx_ignored'].sum() / df['rx_total'].sum() * 100
         missed_ratio = df['rx_missed'].sum() / df['rx_total'].sum() * 100
 

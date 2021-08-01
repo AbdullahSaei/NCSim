@@ -214,7 +214,7 @@ class NCSim:
             HIGH_VALUE = 1
 
             # divides the screen to 4 quarters
-            def create_quarters(mutate=0):
+            def create_quarters(mutate=0.0):
                 # for the linear equation
                 a = 0.03 + mutate
                 b = 0.55
@@ -485,9 +485,9 @@ class NCSim:
             round_num, aods_tuples[i], ranks[i]) for i, n in enumerate(self.nodes)]
         oh_nodes = list(zip(*[n.get_additive_oh() for n in self.nodes]))
         oh_dict = {
-            'Simple':np.sum(oh_nodes[0]),
-            'Greedy':np.sum(oh_nodes[1]),
-            'Heuristic':np.sum(oh_nodes[2])
+            'Simple': np.sum(oh_nodes[0]),
+            'Greedy': np.sum(oh_nodes[1]),
+            'Heuristic': np.sum(oh_nodes[2])
         }
         self.ctrl.update_analysis(
             [aods, ranks, stats], oh_dict, round_num, ROUNDS, EXTRA_RNDS)
@@ -534,7 +534,7 @@ class NCSim:
         GENERATIONS = GENERATIONS + 1
         EXTRA_RNDS = 0
 
-        #self.ctrl.new_gen_enable_btns()
+        # self.ctrl.new_gen_enable_btns()
         self.run_gen(GENERATIONS, True)
 
     def extra_rnd(self):
