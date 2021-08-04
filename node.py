@@ -39,6 +39,8 @@ class Node(Turtle):
         self.rx_missed_count = 0
         self.ig_msgs_count = 0
         self.packet_loss_count = 0
+        self.is_node_sleeping = False
+        self.is_node_done = False
 
         # additive Overhead 
         self.additive_overhead = [0, 0, 0]
@@ -53,24 +55,33 @@ class Node(Turtle):
         self.ig_msgs_count = 0
         self.packet_loss_count = 0
         self.additive_overhead = [0, 0, 0]
+        self.is_node_sleeping = False
+        self.is_node_done = False
+        self.node_reset()
 
-    def place_node(self, position, only_fd=None):
-        self.shape("circle")
-        self.penup()
-        self.goto((0, 0))
-        self.color(self.node_color)
+    def node_reset(self):
+        # reset node
+        self.fillcolor(self.node_color)
         self.pencolor("black")
-        self.speed("fastest")
+        self.shapesize(outline=2)
         self.clear()
-        if only_fd:
-            self.fd(position)
-        else:
-            self.goto(position)
+        # node number
         self.write(f"{self.node_id}  ", align="right",
                    font=("Calibri", 12, "bold"))
         # Print AoD
         self.write(f"  0%", align="left",
                    font=("sans", 12, "normal"))
+        
+    def place_node(self, position, only_fd=None):
+        self.shape("circle")
+        self.penup()
+        self.goto((0, 0))
+        self.speed("fastest")
+        if only_fd:
+            self.fd(position)
+        else:
+            self.goto(position)
+        self.node_reset()
 
     def add_neighbor(self, new_neighbor):
         # To exclude duplications and adding self node to neighbors
@@ -130,7 +141,7 @@ class Node(Turtle):
 
             # filter ig messages due to: tx_mode and packet loss
             # survivors
-            multi_rx_msg = []
+            multi_rx_msg: typing.List[tuple] = []
             for i, channel_msg, ch_ts in unq_msgs:
                 # node cannot transmit and receive at the same time
                 if not self.duplex and ch_ts[1] == self.sending_channel[1]:
@@ -249,11 +260,25 @@ class Node(Turtle):
     def set_sending_channel(self, freq, timeslot):
         self.sending_channel = (freq, timeslot)
 
+    def node_sleep(self):
+        if not self.is_node_sleeping:
+            self.undo()
+            self.is_node_sleeping = True
+            self.fillcolor("gray")
+            msg = f"  {self.last_aod[0]:3.0f}%"
+            self.write(msg, align="left",
+                       font=("sans", 12, "normal"))
+
     def print_aod_percentage(self, r_num, aods, ranks):
-        self.last_aod = aods
-        self.undo()
-        self.write(f"  {aods[0]:3.0f}%", align="left",
-                   font=("sans", 12, "normal"))
+        if self.last_aod[0] != aods[0]:
+            self.last_aod = aods
+            self.undo()
+            if self.last_aod[0] == 100:
+                self.is_node_done = True
+                self.pencolor("green")
+            self.write(f"  {aods[0]:3.0f}%", align="left",
+                       font=("sans", 12, "normal"))
+
         self.new_round_cleanup()
         return self.get_statistics(r_num, aods, ranks)
 
