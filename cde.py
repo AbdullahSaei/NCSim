@@ -63,14 +63,14 @@ simple_sparse = [0.5, 0.5]
 np.random.seed(SEED_VALUE)
 
 # Global scope Create list of encoder and decoder triples
-nodes : typing.List[typing.List[kodo.RLNCDecoder]] = []
+nodes: typing.List[typing.List[kodo.RLNCDecoder]] = []
 data_in: typing.List[bytearray] = []
-simple_data_out :typing.List[bytearray]= []
-greedy_data_out :typing.List[bytearray]= []
+simple_data_out: typing.List[bytearray] = []
+greedy_data_out: typing.List[bytearray] = []
 heuristic_data_out: typing.List[bytearray] = []
 
 # Master encoder
-master_data_in: bytearray 
+master_data_in: bytearray
 master_encoder = kodo.RLNCEncoder(field, symbols, symbol_size)
 
 
@@ -147,14 +147,12 @@ def generate_data():
 def node_broadcast(node, neighbours, rnd, _logger):
     # get kodo encoder and decoder
     s_decoder, g_decoder, h_decoder = nodes[node.node_id]
-    
-    # calculate additive overhead
-    s_overhead = 0
-    g_overhead = 0
-    h_overhead = 0
+
+    # Generate random coefficients
+    random_code_vector = np.random.randint(1, field_max, size=NUM_OF_NODES)
 
     # produce simple packet to broadcast
-    s_pack_coe = [np.random.choice([np.random.randint(field_max), 0], p=simple_sparse) if s_decoder.is_symbol_pivot(
+    s_pack_coe = [np.random.choice([random_code_vector[sym], 0], p=simple_sparse) if s_decoder.is_symbol_pivot(
         sym) else 0 for sym in range(NUM_OF_NODES)]
     s_coe = bytearray(s_pack_coe)
     s_pack_msg = master_encoder.produce_symbol(s_coe)
@@ -165,7 +163,7 @@ def node_broadcast(node, neighbours, rnd, _logger):
     s_overhead = np.count_nonzero(s_pack_coe) * 8
 
     # produce greedy packet to broadcast
-    g_pack_coe = [np.random.randint(1, field_max) if g_decoder.is_symbol_pivot(
+    g_pack_coe = [random_code_vector[sym] if g_decoder.is_symbol_pivot(
         sym) else 0 for sym in range(NUM_OF_NODES)]
     g_coe = bytearray(g_pack_coe)
     g_pack_msg = master_encoder.produce_symbol(g_coe)
@@ -184,18 +182,19 @@ def node_broadcast(node, neighbours, rnd, _logger):
         missings = [1 if ngbr_h_decoder.is_symbol_missing(
             sym) else missings[sym] for sym in range(NUM_OF_NODES)]
 
-    # If no missing syms are needed generate some random
+    # If no missing symbols are needed generate some random
     if np.sum(missings) == 0 and not all_nei_done:
         missings = [np.random.choice([True, False])
                     for _ in range(NUM_OF_NODES)]
 
     # if all neighbors done, shut up
     if all_nei_done:
+        node.node_sleep()
         h_pack = None
         h_overhead = 0
     else:
-        h_pack_coe = [np.random.randint(1, field_max) if h_decoder.is_symbol_pivot(
-            sym) and missings[sym] else 0 for sym in range(NUM_OF_NODES)]
+        h_pack_coe = [random_code_vector[sym] if h_decoder.is_symbol_pivot(
+            sym) else 0 for sym in range(NUM_OF_NODES)]
         h_coe = bytearray(h_pack_coe)
         h_pack_msg = master_encoder.produce_symbol(h_coe)
         h_pack = {

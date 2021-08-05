@@ -9,12 +9,13 @@ import numpy as np
 import logging
 import cde
 import re
+import pandas as pd
 
 CFG_OS = os_type()
 # Get values from ncs visualizer
 
 # Fetch Simulation Dictionary
-CFG_SIM = ncsv.CFG_SIM   
+CFG_SIM = ncsv.CFG_SIM
 # Fetch Parameters Dictionary
 CFG_PARAM = ncsv.CFG_PARAM
 
@@ -62,19 +63,17 @@ trace = logging.getLogger('trace')
 kpi = logging.getLogger('kpi')
 kodo_log = logging.getLogger('kodo')
 
+LOG_FILES_NAME = f"{LOG_PATH}/{TOPOLOGY_TYPE}_{NUM_OF_NODES}_{EXP_NAME}_{EXP_ID}"
 # add a file handler
-log_fh = logging.FileHandler(
-    f'{LOG_PATH}/{TOPOLOGY_TYPE}_{NUM_OF_NODES}_{EXP_NAME}_{EXP_ID}.log', 'w+')
-kpi_fh = logging.FileHandler(
-    f'{LOG_PATH}/{TOPOLOGY_TYPE}_{NUM_OF_NODES}_{EXP_NAME}_{EXP_ID}.csv', 'w+')
-kodo_fh = logging.FileHandler(
-    f'{LOG_PATH}/{TOPOLOGY_TYPE}_{NUM_OF_NODES}_{EXP_NAME}_{EXP_ID}.txt', 'w+')
+log_fh = logging.FileHandler(f'{LOG_FILES_NAME}.log', 'w+')
+kpi_fh = logging.FileHandler(f'{LOG_FILES_NAME}.csv', 'w+')
+kodo_fh = logging.FileHandler(f'{LOG_FILES_NAME}.txt', 'w+')
 # create a formatter and set the formatter for the handler.
 log_frmt = logging.Formatter('%(asctime)s:%(levelname)-10s: %(funcName)-16s: %(message)s',
                              datefmt="%Y-%m-%d %H.%M.%S")
 kpi_frmt = logging.Formatter('%(asctime)s,%(msecs)-3d,%(funcName)-17s,%(message)s',
                              datefmt="%Y-%m-%d %H:%M:%S")
-kodo_frmt = logging.Formatter('%(asctime)s  %(funcName)-17s\n%(message)s',
+kodo_frmt = logging.Formatter('%(asctime)s\t%(funcName)-17s\t%(message)s',
                               datefmt="%Y-%m-%d %H:%M:%S")
 log_fh.setFormatter(log_frmt)
 kpi_fh.setFormatter(kpi_frmt)
@@ -146,9 +145,13 @@ class NCSim:
         summ_header = [*self.nodes[0].get_statistics()]
         # Init controller window
         self.ctrl = Controller(
-            self.screen.root, summ_header, auto_run=RUN_ALL, 
+            self.screen.root, summ_header, auto_run=RUN_ALL,
             auto_full=AUTO_RUN_TO_FULL, **get_configs())
 
+        self.statistics_df = pd.DataFrame(columns=['Generation', *summ_header])
+        self.at_done_df = pd.DataFrame(
+            columns=['Generation', 'Round', 'Node', 'Algorithm', 'added_s_overhead', 'added_g_overhead', 'added_h_overhead'])
+        self.logged = [[False, False, False] for _ in range(NUM_OF_NODES)]
         print("init done")
 
     def create_nodes(self):
@@ -214,7 +217,7 @@ class NCSim:
             HIGH_VALUE = 1
 
             # divides the screen to 4 quarters
-            def create_quarters(mutate=0):
+            def create_quarters(mutate=0.0):
                 # for the linear equation
                 a = 0.03 + mutate
                 b = 0.55
@@ -397,7 +400,7 @@ class NCSim:
             node.set_sending_channel(freq, timeslot)
 
             cde.node_broadcast(node, node.get_neighbors(), r, _logger=kpi)
-        
+
             # update tx counter
             node.update_tx_counter()
             #
@@ -438,7 +441,7 @@ class NCSim:
         self.rx_phase(r)
 
         # Collect data of the round
-        self.end_round(r)
+        self.end_round(r, g)
 
     def run_gen(self, g, xtra=False):
         # LOGGING:
@@ -457,10 +460,11 @@ class NCSim:
         trace.info(f"generation {g} begin")
         print("\nGeneration {} \n".format(g))
         # clean up before new generation
+        self.logged = [[False, False, False] for _ in range(NUM_OF_NODES)]
         self.ctrl.new_generation_cleanup()
         for n in self.nodes:
             n.clear_counters()
-
+            
         # Generate new data
         cde.generate_data()
 
@@ -470,13 +474,14 @@ class NCSim:
         # Starting from second round
         for r in range(1, ROUNDS+1):
             self.run_round(g, r)
+
         self.end_generation()
 
         # continue running if check box marked
         if self.ctrl.is_run_to_full() and self.ctrl.is_continuous_run() == 0:
             self.run_to_full()
 
-    def end_round(self, round_num):
+    def end_round(self, round_num, gen_no=0):
         # calculate data for the round
         aods = cde.calculate_aod(round_num, _logger=kpi)
         aods_tuples = list(zip(*aods))
@@ -485,17 +490,46 @@ class NCSim:
             round_num, aods_tuples[i], ranks[i]) for i, n in enumerate(self.nodes)]
         oh_nodes = list(zip(*[n.get_additive_oh() for n in self.nodes]))
         oh_dict = {
-            'Simple':np.sum(oh_nodes[0]),
-            'Greedy':np.sum(oh_nodes[1]),
-            'Heuristic':np.sum(oh_nodes[2])
+            'Simple': np.sum(oh_nodes[0]),
+            'Greedy': np.sum(oh_nodes[1]),
+            'Heuristic': np.sum(oh_nodes[2])
         }
         self.ctrl.update_analysis(
             [aods, ranks, stats], oh_dict, round_num, ROUNDS, EXTRA_RNDS)
+
+        # Log data of interest
+        if round_num == ROUNDS:
+            # Store statistics at specific rounds
+            stats_df = pd.DataFrame(stats)
+            stats_df['Generation'] = np.ones(NUM_OF_NODES, dtype=int) * gen_no
+            self.statistics_df = self.statistics_df.append(
+                stats_df, ignore_index=True)
+
+        # get AoDs
+        algs = {0: "Simple", 1: "Greedy", 2: "Heuristic"}
+        for i, n in enumerate(self.nodes):
+            for alg in algs:
+                if not self.logged[i][alg] and aods_tuples[i][alg] == 100:
+                    self.logged[i][alg] = True
+                    # Store results
+                    s_oh, g_oh, h_oh = n.get_additive_oh()
+                    self.at_done_df = self.at_done_df.append(
+                        {
+                            'Generation': gen_no,
+                            'Round': round_num,
+                            'Node': i,
+                            'Algorithm': algs[alg],
+                            'added_s_overhead': s_oh,
+                            'added_g_overhead': g_oh,
+                            'added_h_overhead': h_oh
+                        }, ignore_index=True)
+
         print(f"end round {round_num}")
 
     def end_generation(self):
         # Calculate nodes with 100% AoD
-        self.full_AoD = [1 if n.last_aod == (100, 100, 100) else 0 for n in self.nodes]
+        self.full_AoD = [1 if n.last_aod == (
+            100, 100, 100) else 0 for n in self.nodes]
         kpi.info(
             f"totn {NUM_OF_NODES},al{ROUNDS + EXTRA_RNDS},AoD {sum(self.full_AoD):2}/{len(self.full_AoD)} has 100%")
 
@@ -515,6 +549,11 @@ class NCSim:
         trace.info("run completed")
         self.ctrl.dis_btns(dis_all=True)
         self.enable_extra_runs()
+
+        # Exporting files
+        self.statistics_df.to_csv(f'{LOG_FILES_NAME}_at_tx.csv', index=False)
+        self.at_done_df.to_csv(f'{LOG_FILES_NAME}_at_done.csv', index=False)
+
         print("run completed")
 
     # for extra runs
@@ -534,7 +573,7 @@ class NCSim:
         GENERATIONS = GENERATIONS + 1
         EXTRA_RNDS = 0
 
-        #self.ctrl.new_gen_enable_btns()
+        # self.ctrl.new_gen_enable_btns()
         self.run_gen(GENERATIONS, True)
 
     def extra_rnd(self):
@@ -545,7 +584,7 @@ class NCSim:
 
     def run_to_full(self):
         counter = 0
-        while sum(self.full_AoD) != NUM_OF_NODES:
+        while np.sum(self.full_AoD) != NUM_OF_NODES:
             breaker = 100
             self.extra_rnd()
             counter = counter + 1
