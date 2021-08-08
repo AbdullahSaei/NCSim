@@ -460,10 +460,7 @@ class NCSim:
         trace.info(f"generation {g} begin")
         print("\nGeneration {} \n".format(g))
         # clean up before new generation
-        self.logged = [[False, False, False] for _ in range(NUM_OF_NODES)]
-        self.ctrl.new_generation_cleanup()
-        for n in self.nodes:
-            n.clear_counters()
+        self.gen_clean_up()
             
         # Generate new data
         cde.generate_data()
@@ -566,6 +563,14 @@ class NCSim:
         btn_xtr_gen['command'] = self.extra_gen
         btn_xtr_rnd['command'] = self.extra_rnd
         btn_to_full['command'] = self.run_to_full
+
+    def gen_clean_up(self):
+        global EXTRA_RNDS
+        EXTRA_RNDS = 0
+        self.logged = [[False, False, False] for _ in range(NUM_OF_NODES)]
+        self.ctrl.new_generation_cleanup()
+        for n in self.nodes:
+            n.clear_counters()
 
     def extra_gen(self):
         global GENERATIONS
