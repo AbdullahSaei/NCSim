@@ -10,6 +10,8 @@ import logging
 import cde
 import re
 import pandas as pd
+from glob import glob
+import os
 
 CFG_OS = os_type()
 # Get values from ncs visualizer
@@ -64,6 +66,11 @@ kpi = logging.getLogger('kpi')
 kodo_log = logging.getLogger('kodo')
 
 LOG_FILES_NAME = f"{LOG_PATH}/{TOPOLOGY_TYPE}_{NUM_OF_NODES}_{EXP_NAME}_{EXP_ID}"
+
+# Start clean
+for filename in glob(f"{LOG_FILES_NAME}*"):
+    os.remove(filename)
+
 # add a file handler
 log_fh = logging.FileHandler(f'{LOG_FILES_NAME}.log', 'w+')
 kpi_fh = logging.FileHandler(f'{LOG_FILES_NAME}.csv', 'w+')
@@ -152,6 +159,8 @@ class NCSim:
         self.at_done_df = pd.DataFrame(
             columns=['Generation', 'Round', 'Node', 'Algorithm', 'added_s_overhead', 'added_g_overhead', 'added_h_overhead'])
         self.logged = [[False, False, False] for _ in range(NUM_OF_NODES)]
+
+        self.current_gen = 0
         print("init done")
 
     def create_nodes(self):
@@ -414,7 +423,7 @@ class NCSim:
             if packets:
                 cde.node_receive(node, packets, r, _logger=kpi)
 
-    def run_round(self, g, r):
+    def run_round(self, r):
         # wait between generations
         while self.ctrl.is_continuous_run() > 1:
             self.screen.root.update()
@@ -422,6 +431,7 @@ class NCSim:
             if self.ctrl.is_nxt_clicked():
                 self.ctrl.post_click()
                 break
+        g = self.current_gen
         # TRANSMISSION PHASE
         # logging:
         log_msg = f"Generation {g}/{GENERATIONS} round {r}/{ROUNDS}, Transmitting phase"
@@ -441,9 +451,10 @@ class NCSim:
         self.rx_phase(r)
 
         # Collect data of the round
-        self.end_round(r, g)
+        self.end_round(r)
 
-    def run_gen(self, g, xtra=False):
+    def run_gen(self, xtra=False):
+        g = self.current_gen
         # LOGGING:
         self.screen.visual_output_msg(f"New generation {g}")
         # wait between generations
@@ -470,7 +481,7 @@ class NCSim:
 
         # Starting from second round
         for r in range(1, ROUNDS+1):
-            self.run_round(g, r)
+            self.run_round(r)
 
         self.end_generation()
 
@@ -478,7 +489,7 @@ class NCSim:
         if self.ctrl.is_run_to_full() and self.ctrl.is_continuous_run() == 0:
             self.run_to_full()
 
-    def end_round(self, round_num, gen_no=0):
+    def end_round(self, round_num):
         # calculate data for the round
         aods = cde.calculate_aod(round_num, _logger=kpi)
         aods_tuples = list(zip(*aods))
@@ -498,7 +509,7 @@ class NCSim:
         if round_num == ROUNDS:
             # Store statistics at specific rounds
             stats_df = pd.DataFrame(stats)
-            stats_df['Generation'] = np.ones(NUM_OF_NODES, dtype=int) * gen_no
+            stats_df['Generation'] = [self.current_gen] * NUM_OF_NODES
             self.statistics_df = self.statistics_df.append(
                 stats_df, ignore_index=True)
 
@@ -512,7 +523,7 @@ class NCSim:
                     s_oh, g_oh, h_oh = n.get_additive_oh()
                     self.at_done_df = self.at_done_df.append(
                         {
-                            'Generation': gen_no,
+                            'Generation': self.current_gen,
                             'Round': round_num,
                             'Node': i,
                             'Algorithm': algs[alg],
@@ -537,8 +548,9 @@ class NCSim:
 
     # Simulation Sequence
     def run_generations(self):
-        for g in range(1, GENERATIONS+1):
-            self.run_gen(g)
+        for _ in range(GENERATIONS):
+            self.current_gen += 1
+            self.run_gen()
 
         # LOGGING:
         self.screen.visual_output_msg(
@@ -548,8 +560,8 @@ class NCSim:
         self.enable_extra_runs()
 
         # Exporting files
-        self.statistics_df.to_csv(f'{LOG_FILES_NAME}_at_tx.csv', index=False)
-        self.at_done_df.to_csv(f'{LOG_FILES_NAME}_at_done.csv', index=False)
+        self.statistics_df.to_csv(f'{LOG_FILES_NAME}_at_tx.csv', index=False, mode='a',)
+        self.at_done_df.to_csv(f'{LOG_FILES_NAME}_at_done.csv', index=False, mode='a')
 
         print("run completed")
 
@@ -575,22 +587,23 @@ class NCSim:
     def extra_gen(self):
         global GENERATIONS
         global EXTRA_RNDS
-        GENERATIONS = GENERATIONS + 1
+        GENERATIONS += 1
         EXTRA_RNDS = 0
+        self.current_gen += 1
 
         # self.ctrl.new_gen_enable_btns()
         self.run_gen(GENERATIONS, True)
 
     def extra_rnd(self):
         global EXTRA_RNDS
-        EXTRA_RNDS = EXTRA_RNDS + 1
-        self.run_round(GENERATIONS, ROUNDS + EXTRA_RNDS)
+        EXTRA_RNDS += 1
+        self.run_round(ROUNDS + EXTRA_RNDS)
         self.end_generation()
 
     def run_to_full(self):
         counter = 0
+        breaker = 100
         while np.sum(self.full_AoD) != NUM_OF_NODES:
-            breaker = 100
             self.extra_rnd()
             counter = counter + 1
             if counter == breaker:

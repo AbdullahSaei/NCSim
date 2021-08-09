@@ -20,7 +20,7 @@
     "button_height": 30
   },
   "Parameters": {
-    "nodes_num": 4,
+    "nodes_num": 14,
     "seed": 83,
     "node_buffer_size": 100,
     "generations_num": 3,

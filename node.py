@@ -270,7 +270,7 @@ class Node(Turtle):
                        font=("sans", 12, "normal"))
 
     def print_aod_percentage(self, r_num, aods, ranks):
-        if self.last_aod[0] != aods[0]:
+        if self.last_aod != aods:
             self.last_aod = aods
             self.undo()
             if self.last_aod[0] == 100:
