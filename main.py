@@ -1,7 +1,15 @@
 from ncsim import NCSim
 
 
-def main():
+def main() -> None:
+    """
+    Main function of the simulator
+
+    Returns
+    -------
+    None.
+
+    """
     # Normal Scenario
     # Create the simulation
     sim = NCSim()

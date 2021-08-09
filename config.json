@@ -25,7 +25,7 @@
     "node_buffer_size": 100,
     "generations_num": 3,
     "generation_time_ms": 1000,
-    "action_time_ms": 200,
+    "action_time_ms": 40,
     "topology": "random",
     "min_dist_between_nodes": 50,
     "nodes_coverage": 100,

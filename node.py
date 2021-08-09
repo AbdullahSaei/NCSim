@@ -1,6 +1,6 @@
 from turtle import Turtle
-import numpy as np
 import typing
+import numpy as np
 
 
 def choose_random_from_list(id_msg_list):
@@ -20,8 +20,8 @@ class Node(Turtle):
         # simulation configuration
         self.buffer_size = int(kwargs.get("buf_size", 100))
         self.neighbors: typing.List[Node] = []
-        self.available_messages : typing.List[tuple]= []
-        self.rx_buffer : list = []
+        self.available_messages: typing.List[tuple] = []
+        self.rx_buffer: list = []
         self.ch_num = int(kwargs.get("channels", 2))
         self.ts_num = int(kwargs.get("timeslots", 2))
         self.sending_channel = (0, 0)
@@ -42,7 +42,7 @@ class Node(Turtle):
         self.is_node_sleeping = False
         self.is_node_done = False
 
-        # additive Overhead 
+        # additive Overhead
         self.additive_overhead = [0, 0, 0]
 
     def clear_counters(self):
@@ -69,9 +69,9 @@ class Node(Turtle):
         self.write(f"{self.node_id}  ", align="right",
                    font=("Calibri", 12, "bold"))
         # Print AoD
-        self.write(f"  0%", align="left",
+        self.write("  0%", align="left",
                    font=("sans", 12, "normal"))
-        
+
     def place_node(self, position, only_fd=None):
         self.shape("circle")
         self.penup()
@@ -238,8 +238,9 @@ class Node(Turtle):
         self.available_messages.append((i, new_packet, on_channel))
 
     def add_to_overhead(self, vals):
-        self.additive_overhead = [cur + neu for cur, neu in zip(self.additive_overhead, vals)]
-    
+        self.additive_overhead = [cur + neu for cur,
+                                  neu in zip(self.additive_overhead, vals)]
+
     def get_additive_oh(self):
         return self.additive_overhead
 
@@ -253,9 +254,9 @@ class Node(Turtle):
 
             # print("node {:2} received from ".format(self.node_id) + s)
             return self.rx_buffer
-        else:
-            print("node {:2} no buffer".format(self.node_id))
-            return None
+
+        print("node {:2} no buffer".format(self.node_id))
+        return None
 
     def set_sending_channel(self, freq, timeslot):
         self.sending_channel = (freq, timeslot)

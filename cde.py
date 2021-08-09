@@ -2,17 +2,11 @@
 # encoding: utf-8
 
 # Cooperative data exchange network
-import kodo
 import json
 import numpy as np
 import string
 import typing
-
-"""
-Cooperative data exchange network using network coding.
-
-This file creates kodo for all nodes using kodo for CDE.
-"""
+import kodo
 
 try:
     # Open the NCSim Config Json file
@@ -115,8 +109,7 @@ def generate_data():
     kodo_init()
 
     # for random message generation
-    _alphabet = string.ascii_uppercase + string.digits
-    _alphabet_list = [char for char in _alphabet]
+    _alphabet_list = list(string.ascii_uppercase + string.digits)
 
     # Generate random message
     for i, decoders, *_ in enumerate(nodes):
@@ -173,21 +166,12 @@ def node_broadcast(node, neighbours, rnd, _logger):
     }
     g_overhead = np.count_nonzero(g_pack_coe) * 8
 
-    # produce heuristic packet to broadcast
-    missings = [0 for _ in range(NUM_OF_NODES)]
     all_nei_done = True
     for ngbr in neighbours:
         _, _, ngbr_h_decoder = nodes[ngbr.node_id]
         all_nei_done = all_nei_done and ngbr_h_decoder.is_complete()
-        missings = [1 if ngbr_h_decoder.is_symbol_missing(
-            sym) else missings[sym] for sym in range(NUM_OF_NODES)]
 
-    # If no missing symbols are needed generate some random
-    if np.sum(missings) == 0 and not all_nei_done:
-        missings = [np.random.choice([True, False])
-                    for _ in range(NUM_OF_NODES)]
-
-    # if all neighbors done, shut up
+    # if all neighbors done, shut down
     if all_nei_done:
         node.node_sleep()
         h_pack = None
@@ -243,12 +227,13 @@ def node_receive(node, packets, rnd, _logger):
                 h_pack, h_coe = h_pkt.values()
                 h_decoder.consume_symbol(h_pack, h_coe)
 
-            if s_pkt and g_pkt:
-                # greedy decoder
+            # greedy decoder
+            if g_pkt:
                 g_pack, g_coe = g_pkt.values()
                 g_decoder.consume_symbol(g_pack, g_coe)
 
-                # simple decoder
+            # simple decoder
+            if s_pkt:
                 s_pack, s_coe = s_pkt.values()
                 s_decoder.consume_symbol(s_pack, s_coe)
 

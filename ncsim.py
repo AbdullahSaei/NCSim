@@ -1,17 +1,17 @@
 from turtle import Turtle
 import typing
-from node import Node
-from controller import MouseClick, Controller
 from platform import system as os_type
-import ncsim_visualizer as ncsv
-import time
-import numpy as np
-import logging
-import cde
-import re
-import pandas as pd
 from glob import glob
 import os
+import time
+import logging
+import re
+import numpy as np
+import pandas as pd
+import cde
+from node import Node
+from controller import MouseClick, Controller
+import ncsim_visualizer as ncsv
 
 CFG_OS = os_type()
 # Get values from ncs visualizer
@@ -278,7 +278,7 @@ class NCSim:
                                 _success = False
                         if counter == 1000:
                             trace.warning(
-                                f"failed to create topology")
+                                "failed to create topology")
                             return False
                 return True
 
@@ -472,7 +472,7 @@ class NCSim:
         print("\nGeneration {} \n".format(g))
         # clean up before new generation
         self.gen_clean_up()
-            
+
         # Generate new data
         cde.generate_data()
 
@@ -592,7 +592,7 @@ class NCSim:
         self.current_gen += 1
 
         # self.ctrl.new_gen_enable_btns()
-        self.run_gen(GENERATIONS, True)
+        self.run_gen(True)
 
     def extra_rnd(self):
         global EXTRA_RNDS

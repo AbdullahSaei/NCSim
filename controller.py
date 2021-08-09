@@ -1,13 +1,13 @@
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import numpy as np
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
 import tkinter as tk
 import tkinter.ttk as ttk
 from turtle import Turtle
-import matplotlib
 import typing
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 plt.style.use('seaborn-deep')
 matplotlib.use('TkAgg')
@@ -174,7 +174,8 @@ def display_data(frame, values, headers=None, assert_empty=False):
     # check if frame is empty
     if assert_empty and frame.winfo_children():
         return False
-    elif frame.winfo_children():
+
+    if frame.winfo_children():
         lbl_headers, lbl_vals = frame.winfo_children()
     else:
         lbl_headers = tk.Label(frame)
