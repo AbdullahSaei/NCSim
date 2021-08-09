@@ -155,7 +155,8 @@ class NCSim:
             self.screen.root, summ_header, auto_run=RUN_ALL,
             auto_full=AUTO_RUN_TO_FULL, **get_configs())
 
-        self.statistics_df = pd.DataFrame(columns=['Generation', *summ_header])
+        self.statistics_df = pd.DataFrame(columns=["Generation", "Round", "Node", "simple_AoD",
+                                          "greedy_AoD", "heuristic_AoD", "simple_rank", "greedy_rank", "heuristic_rank"])
         self.at_done_df = pd.DataFrame(
             columns=['Generation', 'Round', 'Node', 'Algorithm', 'added_s_overhead', 'added_g_overhead', 'added_h_overhead'])
         self.logged = [[False, False, False] for _ in range(NUM_OF_NODES)]
@@ -509,9 +510,17 @@ class NCSim:
         if round_num == ROUNDS:
             # Store statistics at specific rounds
             stats_df = pd.DataFrame(stats)
-            stats_df['Generation'] = [self.current_gen] * NUM_OF_NODES
             self.statistics_df = self.statistics_df.append(
-                stats_df, ignore_index=True)
+                {
+                    "Generation": self.current_gen,
+                    "Round": round_num,
+                    'Node': NUM_OF_NODES,
+                    "simple_AoD": stats_df["S_AoD_%"].mean(),
+                    "greedy_AoD": stats_df["G_AoD_%"].mean(),
+                    "heuristic_AoD": stats_df["H_AoD_%"].mean(),
+                    "simple_rank": stats_df["S_rank"].mean(),
+                    "greedy_rank": stats_df["G_rank"].mean(),
+                    "heuristic_rank": stats_df["H_rank"].mean()}, ignore_index=True)
 
         # get AoDs
         algs = {0: "Simple", 1: "Greedy", 2: "Heuristic"}
@@ -560,8 +569,10 @@ class NCSim:
         self.enable_extra_runs()
 
         # Exporting files
-        self.statistics_df.to_csv(f'{LOG_FILES_NAME}_at_tx.csv', index=False, mode='a',)
-        self.at_done_df.to_csv(f'{LOG_FILES_NAME}_at_done.csv', index=False, mode='a')
+        self.statistics_df.to_csv(
+            f'{LOG_FILES_NAME}_at_tx.csv', index=False, mode='a',)
+        self.at_done_df.to_csv(
+            f'{LOG_FILES_NAME}_at_done.csv', index=False, mode='a')
 
         print("run completed")
 

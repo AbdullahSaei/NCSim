@@ -1,5 +1,10 @@
 #! /usr/bin/env python
 # encoding: utf-8
+"""
+Cooperative data exchange network using network coding.
+
+This file creates kodo for all nodes using kodo for CDE.
+"""
 
 # Cooperative data exchange network
 import json
