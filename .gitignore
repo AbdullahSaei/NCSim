@@ -3,8 +3,6 @@
 __pycache__
 kodo.py
 dummy_kodo.py
-**.csv
-**.log
 **.txt
 !requirements.txt
 venv
