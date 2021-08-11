@@ -197,11 +197,12 @@ def display_data(frame, values, headers=None, assert_empty=False):
 
 
 class Controller:
-    def __init__(self, master, summ_header, auto_run, auto_full, **configs):
+    def __init__(self, master, summ_header, auto_run: str, auto_full, **configs):
         self.root = master
         self.summ_header = summ_header
         self.configs = configs
         self.num_nodes = int(configs.get("num_nodes", 0))
+        self.cli = auto_run.lower() == "cli"
 
         # init inside __init__
         self.df_nodes = pd.DataFrame(columns=self.summ_header)
@@ -258,7 +259,7 @@ class Controller:
 
         self.summ_tree = self.create_summ_tree(self.summ_frame)
         Radios, self.CB1, btns = self.create_controller(
-            auto_run=auto_run, auto_full=auto_full)
+            auto_run=bool(auto_run), auto_full=auto_full)
         self.R1, self.R2, self.R3 = Radios
         self.btn_nxt_gen, self.btn_nxt_rnd, self.btn_xtr_gen, self.btn_xtr_rnd, self.btn_to_full = btns
         self.aod_ax, self.aod_canvas = create_graph(self.aod_grph_frame)
@@ -294,19 +295,21 @@ class Controller:
         tree.pack(expand=True, fill=tk.BOTH)
         return tree
 
-    def update_summ_tree(self, tree, data):
+    def update_summ_tree(self, tree, data, fast_run):
         if data:
             df = pd.DataFrame(data)
-            color = "#" + ("%06x" % np.random.randint(12000000, 13000000))
-            # generating for loop to add new values to tree
-            for _, row in df.iterrows():
-                vals = list(map(int, row.tolist()))
-
-                # generating for loop to print values of dataframe in treeview column.
-                tree.insert('', 0, values=vals, tags=color)
-                tree.tag_configure(color, background=color)
-
             self.df_nodes = self.df_nodes.append(df, ignore_index=True)
+
+            if not fast_run:
+                color = "#" + ("%06x" % np.random.randint(12000000, 13000000))
+                # generating for loop to add new values to tree
+                for _, row in df.iterrows():
+                    vals = list(map(int, row.tolist()))
+
+                    # generating for loop to print values of dataframe in treeview column.
+                    tree.insert('', 0, values=vals, tags=color)
+                    tree.tag_configure(color, background=color)
+
 
     def create_analysis(self, master):
         # Create paned windows
@@ -348,8 +351,9 @@ class Controller:
         # Extract data
         vals, ranks, stats = data
 
-        avg_ranks = [int(np.mean(r)) for r in zip(*ranks)]
+        avg_ranks = [np.mean(r, dtype=np.uint16) for r in zip(*ranks)]
         self.avg_rank.append(avg_ranks)
+        is_full_aod = self.avg_rank.count([self.num_nodes]*3) == 1
 
         # prepare data vals
         f_dn = []
@@ -357,6 +361,7 @@ class Controller:
         means = [np.round(np.mean(arr), decimals=2) for arr in vals]
         maxes = [np.round(np.max(arr), decimals=2) for arr in vals]
         mines = [np.round(np.min(arr), decimals=2) for arr in vals]
+        
         for val in vals:
             arr = np.array(val)
             # Calculate full done and half done nodes
@@ -379,14 +384,25 @@ class Controller:
             # snapshot the current results for that round
             headers = self.headers_current[1:]
             display_data(self.f_at_tx, run_values[1:], headers)
+        
+        # Show config when reach full aod
+        if is_full_aod:
+            self.show_full_aod_stats(r_curr-1)
+        
+        # Update tree
+        self.update_summ_tree(self.summ_tree, stats, self.cli)
+        
+        # for much quicker runs with no GUI delays
+        if self.cli:
+            return False
 
         # update other GUIs
-        self.update_summ_tree(self.summ_tree, stats)
         self.update_hist_graph(vals, r_curr, r_num,
                                self.aod_ax, self.aod_canvas)
         self.update_oh_graph(oh_vals, r_curr, r_num)
         self.update_ranks_graph(ranks, r_curr, r_num, r_xtra,
                                 self.ranks_ax, self.ranks_canvas, oh_vals)
+        return True
 
     def update_hist_graph(self, vals, rnd, num_of_rnds, ax, canvas):
         # prepare data
@@ -420,7 +436,7 @@ class Controller:
 
         # Dataframes
         df = pd.DataFrame(ranks, columns=['Simple', 'Greedy', 'Heuristic'])
-        df['Rounds'] = r_current * np.ones(self.num_nodes, dtype=np.int8)
+        df['Rounds'] = r_current * np.ones(self.num_nodes, dtype=np.uint)
 
         # Calculations
         round_no = r_num + r_xtra
@@ -465,8 +481,6 @@ class Controller:
             ax.text(index + 0.2, 0.1, "Simple done", color='tab:blue',
                     rotation=270, transform=ax.get_xaxis_text1_transform(0)[0])
             self.sgh_done['Simple'] = oh_data['Simple']
-
-            self.show_full_aod_stats(r_current)
 
         # Add line when greedy complete
         if g_ranks.count(self.num_nodes) == 1:

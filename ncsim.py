@@ -22,7 +22,7 @@ CFG_SIM = ncsv.CFG_SIM
 CFG_PARAM = ncsv.CFG_PARAM
 
 # Fetch RUN related Configurations, or set default values.
-RUN_ALL = bool(CFG_SIM.get('auto_run_all', False))
+RUN_ALL = CFG_SIM.get('auto_run_all', "")
 AUTO_RUN_TO_FULL = bool(CFG_SIM.get('auto_full_aod', False))
 
 # Fetch Nodes related Configurations, or set default values.
