@@ -15,7 +15,7 @@ LOG_FILE = "random_14_Simple_WSN_3"
 def preprocess_at_tx():
     """
     Prepares df_at_tx dataframe
-    
+
     RETURN
     ------
     df_aods, df_ranks
@@ -23,24 +23,28 @@ def preprocess_at_tx():
     rnd_num = np.max(df_at_tx['Round'])
     nodes_num = np.max(df_at_tx['Node'])
     gen_num = np.max(df_at_tx['Generation'])
-    
+
     df_at_tx_less = df_at_tx.drop(['Round', 'Node'], axis=1)
-    
-    df_at_tx_ranks = df_at_tx_less.drop(df_at_tx.filter(regex='AoD').columns, axis=1)
-    df_at_tx_aods = df_at_tx_less.drop(df_at_tx.filter(regex='rank').columns, axis=1)
-    df_ranks = df_at_tx_ranks.melt('Generation', 
-        var_name='Algorithm', value_name='Ranks')
-    df_aods = df_at_tx_aods.melt('Generation', 
-    var_name='Algorithm', value_name='Availability of Data percentage')
-    
+
+    df_at_tx_ranks = df_at_tx_less.drop(
+        df_at_tx.filter(regex='AoD').columns, axis=1)
+    df_at_tx_aods = df_at_tx_less.drop(
+        df_at_tx.filter(regex='rank').columns, axis=1)
+    df_ranks = df_at_tx_ranks.melt('Generation',
+                                   var_name='Algorithm', value_name='Ranks')
+    df_aods = df_at_tx_aods.melt('Generation',
+                                 var_name='Algorithm', value_name='Availability of Data percentage')
+
     return df_aods, df_ranks
 
 
 def plots_at_tx():
     pass
 
+
 def main():
     pass
+
 
 def preprocessing(data_frame) -> pd.DataFrame:
     """
@@ -68,7 +72,7 @@ if __name__ == '__main__':
     print(df_at_done.info())
     print(df_at_done.head())
     print(df_at_done.sample(3))
-    
+
     df_aods, df_ranks = preprocess_at_tx()
 
     main()
