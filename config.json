@@ -1,6 +1,6 @@
 {
   "Simulation": {
-    "id": "3",
+    "id": "1",
     "name": "Simple_WSN",
     "log_path": "logs/",
     "screen_title": "Network Coding Simulator",
@@ -21,13 +21,13 @@
   },
   "Parameters": {
     "nodes_num": 50,
-    "seed": 53,
+    "seed": 17,
     "node_buffer_size": 100,
-    "generations_num": 3,
+    "generations_num": 100,
     "generation_time_ms": 1000,
     "action_time_ms": 40,
     "topology": "random",
-    "min_dist_between_nodes": 50,
+    "min_dist_between_nodes": 40,
     "nodes_coverage": 100,
     "packet_size_bytes": 100,
     "fifi":"binary8",

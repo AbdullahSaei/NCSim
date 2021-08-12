@@ -65,7 +65,7 @@ trace = logging.getLogger('trace')
 kpi = logging.getLogger('kpi')
 kodo_log = logging.getLogger('kodo')
 
-LOG_FILES_NAME = f"{LOG_PATH}/{TOPOLOGY_TYPE}_{NUM_OF_NODES}_{EXP_NAME}_{EXP_ID}"
+LOG_FILES_NAME = f"{LOG_PATH}/{TOPOLOGY_TYPE}_{NUM_OF_NODES}_{EXP_NAME}_{SEED_VALUE}"
 
 # Start clean
 for filename in glob(f"{LOG_FILES_NAME}*"):
@@ -613,7 +613,7 @@ class NCSim:
 
     def run_to_full(self):
         counter = 0
-        breaker = 100
+        breaker = 150
         while np.sum(self.full_AoD) != NUM_OF_NODES:
             self.extra_rnd()
             counter = counter + 1

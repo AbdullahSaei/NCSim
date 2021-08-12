@@ -9,3 +9,5 @@ venv
 examples
 tester.py
 kodo.so
+logs/random_50_Simple_WSN_1.csv
+**.log
