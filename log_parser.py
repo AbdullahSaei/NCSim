@@ -1,3 +1,4 @@
+# %%
 """
 Parsing the csv from NCSim module
 """
@@ -102,12 +103,10 @@ if __name__ == '__main__':
     df_at_done = pd.read_csv(LOG_PATH + LOG_FILE + "_at_done.csv")
 
     # visualize data
-    print(df_at_tx)
     print(df_at_tx.info())
     print(df_at_tx.head())
     print(df_at_tx.sample(3))
 
-    print(df_at_done)
     print(df_at_done.info())
     print(df_at_done.head())
     print(df_at_done.sample(3))
@@ -116,3 +115,6 @@ if __name__ == '__main__':
     df_done_means, df_done_maxes = prepare_at_done()
 
     main(*configs)
+
+
+# %%
