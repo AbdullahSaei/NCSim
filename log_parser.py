@@ -3,13 +3,18 @@
 Parsing the csv from NCSim module
 """
 
+# TODO:
+# - add grid
+# - normalise rank
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+plt.style.use('seaborn-deep')
 
 LOG_PATH = "logs/"
-LOG_FILE = "random_20_Simple_WSN_3"
+LOG_FILE = "random_50_Simple_WSN_13"
 
 
 def prepare_at_tx():
@@ -68,19 +73,19 @@ def prepare_at_done():
 def plots_at_tx(rnd_num, nodes_num):
     plt.figure()
     sns.boxplot(data=df_aods, x="Availability of Data percentage",
-                y="Algorithm").set_title(f"AoD at tx = {rnd_num} of {nodes_num} nodes")
+                y="Algorithm", notch=True).set_title(f"AoD at tx = {rnd_num} of {nodes_num} nodes")
     plt.figure()
-    sns.boxplot(data=df_ranks, y="Ranks",
-                x="Algorithm").set_title(f"Ranks at tx = {rnd_num} of {nodes_num} nodes")
+    sns.boxplot(data=df_ranks, x="Ranks",
+                y="Algorithm", notch=True).set_title(f"Ranks at tx = {rnd_num} of {nodes_num} nodes")
 
 
 def plots_at_done(rnd_num, nodes_num):
     plt.figure()
-    sns.boxplot(data=df_done_maxes, x="Round", y="Algorithm").set_title(
+    sns.boxplot(data=df_done_maxes, x="Round", y="Algorithm", order=['Simple', 'Greedy', 'Heuristic'], notch=True).set_title(
         f"Max num of rounds when done {nodes_num} nodes")
     add_v_line(rnd_num)
     plt.figure()
-    sns.boxplot(data=df_done_means, x="Round", y="Algorithm").set_title(
+    sns.boxplot(data=df_done_means, x="Round", y="Algorithm", order=['Simple', 'Greedy', 'Heuristic'], notch=True).set_title(
         f"Mean num of rounds when done {nodes_num} nodes")
     add_v_line(rnd_num)
 
@@ -88,7 +93,7 @@ def plots_at_done(rnd_num, nodes_num):
 def add_v_line(pos):
     plt.axvline(pos, ls='--', color="red",)
     plt.text(pos + 0.1, 0.1, f"tx = {pos}", color='tab:red',
-                rotation=270)
+             rotation=270)
 
 
 def main(rnd_num, nodes_num, gen_num):
