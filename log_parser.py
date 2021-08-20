@@ -14,7 +14,7 @@ import seaborn as sns
 plt.style.use('seaborn-deep')
 
 LOG_PATH = "logs/"
-LOG_FILE = "random_50_Simple_WSN_13"
+LOG_FILE = "random_5_Simple_WSN_17"
 
 
 def prepare_at_tx():
@@ -74,9 +74,11 @@ def plots_at_tx(rnd_num, nodes_num):
     plt.figure()
     sns.boxplot(data=df_aods, x="Availability of Data percentage",
                 y="Algorithm", notch=True).set_title(f"AoD at tx = {rnd_num} of {nodes_num} nodes")
+    plt.grid()
     plt.figure()
     sns.boxplot(data=df_ranks, x="Ranks",
                 y="Algorithm", notch=True).set_title(f"Ranks at tx = {rnd_num} of {nodes_num} nodes")
+    plt.grid()
 
 
 def plots_at_done(rnd_num, nodes_num):
@@ -84,10 +86,12 @@ def plots_at_done(rnd_num, nodes_num):
     sns.boxplot(data=df_done_maxes, x="Round", y="Algorithm", order=['Simple', 'Greedy', 'Heuristic'], notch=True).set_title(
         f"Max num of rounds when done {nodes_num} nodes")
     add_v_line(rnd_num)
+    plt.grid()
     plt.figure()
     sns.boxplot(data=df_done_means, x="Round", y="Algorithm", order=['Simple', 'Greedy', 'Heuristic'], notch=True).set_title(
         f"Mean num of rounds when done {nodes_num} nodes")
     add_v_line(rnd_num)
+    plt.grid()
 
 
 def add_v_line(pos):
@@ -110,11 +114,11 @@ if __name__ == '__main__':
     # visualize data
     print(df_at_tx.info())
     print(df_at_tx.head())
-    print(df_at_tx.sample(3))
+    # print(df_at_tx.sample(3))
 
     print(df_at_done.info())
     print(df_at_done.head())
-    print(df_at_done.sample(3))
+    # print(df_at_done.sample(3))
 
     df_aods, df_ranks, configs = prepare_at_tx()
     df_done_means, df_done_maxes = prepare_at_done()

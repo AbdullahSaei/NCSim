@@ -436,7 +436,7 @@ class Controller:
 
         # Dataframes
         df = pd.DataFrame(ranks, columns=['Simple', 'Greedy', 'Heuristic'])
-        df['Rounds'] = r_current * np.ones(self.num_nodes, dtype=np.uint)
+        df['Rounds'] = r_current * np.ones(self.num_nodes, dtype=np.uint16)
 
         # Calculations
         round_no = r_num + r_xtra
