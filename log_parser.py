@@ -14,6 +14,8 @@ import seaborn as sns
 plt.style.use('seaborn-deep')
 
 LOG_PATH = "logs/"
+LOG_FILES = ["random_5_Simple_WSN_17", "random_10_Simple_WSN_13", "random_20_Simple_WSN_3",
+             "random_30_Simple_WSN_13", "random_40_Simple_WSN_17", "random_50_Simple_WSN_17"]
 LOG_FILE = "random_5_Simple_WSN_17"
 
 
@@ -43,7 +45,7 @@ def prepare_at_tx():
     return df_aods, df_ranks, list(map(int, [rnd_num, nodes_num, gen_num]))
 
 
-def prepare_at_done():
+def prepare_at_done(df_at_done):
     """
     Prepares df_at_done dataframe
 
@@ -100,9 +102,63 @@ def add_v_line(pos):
              rotation=270)
 
 
-def main(rnd_num, nodes_num, gen_num):
+def add_h_line(pos):
+    plt.axhline(pos, ls='--', color="red",)
+    plt.text(0, pos+1, f"tx = {pos}", color='tab:red')
+
+
+def main(rnd_num, nodes_num, _):
     plots_at_tx(rnd_num, nodes_num)
     plots_at_done(rnd_num, nodes_num)
+    plot_trends()
+
+
+def plot_trends():
+    plt.figure()
+    sns.boxplot(data=df_master_maxes, x="Nodes", y="Rounds", hue="Algorithm", hue_order=['Simple', 'Greedy', 'Heuristic'], notch=True, showfliers=False).set_title(
+        f"Max num of rounds vs num of nodes")
+    add_h_line(25)
+    plt.grid()
+    plt.figure()
+    sns.boxplot(data=df_master_means, x="Nodes", y="Rounds", hue="Algorithm",hue_order=['Simple', 'Greedy', 'Heuristic'], notch=True, showfliers=False).set_title(
+        f"Mean num of rounds vs num of nodes")
+    add_h_line(25)
+    plt.grid()
+
+
+def prepare_trend():
+    maxes_list_dicts = []
+    means_list_dicts = []
+    for log_file in LOG_FILES:
+        df = pd.read_csv(LOG_PATH + log_file + "_at_done.csv")
+        num_nodes = int(log_file.split("_")[1])
+        df_maxes, df_means = prepare_at_done(df)
+        list_dicts_maxes = [{
+            "Nodes": num_nodes,
+            "Rounds": rnd,
+            "Algorithm": alg
+        } for rnd, alg in zip(df_maxes['Round'], df_maxes['Algorithm'])]
+
+        list_dicts_means = [{
+            "Nodes": num_nodes,
+            "Rounds": rnd,
+            "Algorithm": alg
+        } for rnd, alg in zip(df_means['Round'], df_means['Algorithm'])]
+
+        maxes_list_dicts.append(list_dicts_maxes)
+        means_list_dicts.append(list_dicts_means)
+
+    df_master_maxes = pd.DataFrame()
+    for l in maxes_list_dicts:
+        df_master_maxes = df_master_maxes.append(
+            pd.DataFrame(l), ignore_index=True)
+
+    df_master_means = pd.DataFrame()
+    for l in means_list_dicts:
+        df_master_means = df_master_means.append(
+            pd.DataFrame(l), ignore_index=True)
+
+    return df_master_maxes, df_master_means
 
 
 if __name__ == '__main__':
@@ -121,9 +177,10 @@ if __name__ == '__main__':
     # print(df_at_done.sample(3))
 
     df_aods, df_ranks, configs = prepare_at_tx()
-    df_done_means, df_done_maxes = prepare_at_done()
+    df_done_means, df_done_maxes = prepare_at_done(df_at_done)
+
+    df_master_means, df_master_maxes = prepare_trend()
 
     main(*configs)
-
 
 # %%
