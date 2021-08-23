@@ -107,7 +107,7 @@ def add_h_line(pos):
     plt.text(0, pos+1, f"tx = {pos}", color='tab:red')
 
 
-def main(rnd_num, nodes_num, _):
+def main(rnd_num=0, nodes_num=0, _=0):
     plots_at_tx(rnd_num, nodes_num)
     plots_at_done(rnd_num, nodes_num)
     plot_trends()
